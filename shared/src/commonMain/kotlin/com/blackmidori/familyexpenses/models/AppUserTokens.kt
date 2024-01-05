@@ -1,6 +1,5 @@
-package com.blackmidori.familyexpenses.android
+package com.blackmidori.familyexpenses.models
 
-import java.time.Instant
-import java.time.OffsetDateTime
+import kotlinx.datetime.Instant
 
 class AppUserTokens (val accessTokenExpirationDateTime: Instant, val accessToken: String, val refreshToken: String)

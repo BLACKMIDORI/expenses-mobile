@@ -1,13 +1,14 @@
-package com.blackmidori.familyexpenses.android
+package com.blackmidori.familyexpenses
 
-import java.time.Instant
-import java.time.OffsetDateTime
+import com.blackmidori.familyexpenses.models.AppUser
+import com.blackmidori.familyexpenses.models.AppUserTokens
+import kotlinx.datetime.Instant
 
 class Session {
     companion object {
         var appUser: AppUser = AppUser(
             "uninitialized", AppUserTokens(
-                Instant.MIN,
+                Instant.DISTANT_PAST,
                 "uninitialized",
                 "uninitialized"
             )

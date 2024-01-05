@@ -1,4 +1,4 @@
-package com.blackmidori.familyexpenses.android
+package com.blackmidori.familyexpenses
 
 class Config {
     companion object{

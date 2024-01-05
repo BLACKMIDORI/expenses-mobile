@@ -30,7 +30,6 @@ android {
         }
     }
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -38,7 +37,6 @@ android {
         jvmTarget = "1.8"
     }
     dependencies {
-        coreLibraryDesugaring(libs.desugar.jdk.libs)
     }
 }
 
@@ -51,6 +49,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.androidx.credentials)
+    implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.serialization.json)
     debugImplementation(libs.compose.ui.tooling)
 }

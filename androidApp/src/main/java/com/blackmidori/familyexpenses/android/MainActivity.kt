@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -30,12 +31,14 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialOption
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
-import com.blackmidori.familyexpenses.android.infrastructure.http.HttpClientImpl
+import com.blackmidori.familyexpenses.Session
+import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
+import com.blackmidori.familyexpenses.models.AppUser
+import com.blackmidori.familyexpenses.models.AppUserTokens
 import com.blackmidori.familyexpenses.android.repositories.AuthRepository
 import com.blackmidori.familyexpenses.android.screens.HomeActivity
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -44,6 +47,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val context = LocalContext.current
             MyApplicationTheme {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -56,6 +60,34 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+            Thread{
+                val sharedPreferences = context.getSharedPreferences("Tokens", Context.MODE_PRIVATE)
+                val refreshToken = sharedPreferences.getString("refresh_token",null)
+                if(refreshToken!= null){
+                    val userTokensResult =
+                        AuthRepository(httpClient = HttpClientJavaImpl()).renewTokens(refreshToken)
+                    if (userTokensResult.isFailure) {
+                        Log.w(TAG, "handleIdToken: " + userTokensResult.exceptionOrNull())
+                        return@Thread;
+                    }
+                    val response = userTokensResult.getOrNull()!!
+                    Session.appUser = AppUser(
+                        response.user.id,
+                        AppUserTokens(
+                            response.accessTokenExpirationDateTime,
+                            response.accessToken,
+                            response.refreshToken
+                        ),
+                    )
+                    context.startActivity(
+                        Intent(
+                            context,
+                            HomeActivity::class.java
+                        ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    )
+                    sharedPreferences.edit().putString("refresh_token", response.refreshToken).apply()
+                }
+            }.start()
         }
     }
 
@@ -92,11 +124,15 @@ class MainActivity : ComponentActivity() {
                             )
                             when (val credential = result.credential) {
                                 is GoogleIdTokenCredential -> {
-                                    handleIdToken(context,credential.idToken)
+                                    handleIdToken(context, credential.idToken)
                                 }
                             }
                         } catch (e: GetCredentialException) {
                             Log.w(TAG, "handleSignInResult:error", e)
+
+                            this@MainActivity.runOnUiThread {
+                                Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 },
@@ -142,12 +178,19 @@ class MainActivity : ComponentActivity() {
         Thread {
             try {
                 val userTokensResult =
-                    AuthRepository(httpClient = HttpClientImpl()).signInWithToken(idToken)
+                    AuthRepository(httpClient = HttpClientJavaImpl()).signInWithToken(idToken)
                 if (userTokensResult.isFailure) {
-                    Log.w(TAG, "handleIdToken: " + userTokensResult.exceptionOrNull())
+                    Log.w(TAG, "Error: " + userTokensResult.exceptionOrNull())
+                    this@MainActivity.runOnUiThread {
+                        Toast.makeText(
+                            context,
+                            "Error: ${userTokensResult.exceptionOrNull()}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                     return@Thread;
                 }
-                val response =  userTokensResult.getOrNull()!!
+                val response = userTokensResult.getOrNull()!!
                 Session.appUser = AppUser(
                     response.user.id,
                     AppUserTokens(
@@ -162,6 +205,8 @@ class MainActivity : ComponentActivity() {
                         HomeActivity::class.java
                     ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 )
+                val sharedPreferences = context.getSharedPreferences("Tokens", Context.MODE_PRIVATE)
+                sharedPreferences.edit().putString("refresh_token", response.refreshToken).apply()
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }

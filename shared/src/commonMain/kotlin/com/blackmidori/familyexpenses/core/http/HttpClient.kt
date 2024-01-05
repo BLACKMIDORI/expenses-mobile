@@ -1,4 +1,4 @@
-package com.blackmidori.familyexpenses.android.infrastructure.http
+package com.blackmidori.familyexpenses.core.http
 
 interface HttpClient {
     fun get(reqUrl: String?, headers: Map<String, String> = HashMap()): HttpResponse

@@ -1,6 +1,8 @@
-package com.blackmidori.familyexpenses.android.infrastructure.http
+package com.blackmidori.familyexpenses.android.core
 
 import android.util.Log
+import com.blackmidori.familyexpenses.core.http.HttpClient
+import com.blackmidori.familyexpenses.core.http.HttpResponse
 import java.io.BufferedInputStream
 import java.io.BufferedReader
 import java.io.IOException
@@ -14,18 +16,18 @@ import java.net.URL
 
 // Source: https://stackoverflow.com/a/74643791
 
-class HttpClientImpl : HttpClient{
+class HttpClientJavaImpl : HttpClient {
     override fun get(reqUrl: String?, headers: Map<String, String>): HttpResponse {
+        Log.i(TAG,"GET: $reqUrl")
         var status: Int = 0
         var response: String? = null
-        if(headers.isNotEmpty()){
-            Log.e(TAG, "Headers not yet implemented")
-            return HttpResponse(status = 0);
-        }
         try {
             val url = URL(reqUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "GET"
+            for (header in headers) {
+                conn.setRequestProperty(header.key,header.value)
+            }
             status = conn.responseCode
             try{
                 val `in`: InputStream = BufferedInputStream(conn.inputStream)
@@ -48,16 +50,16 @@ class HttpClientImpl : HttpClient{
     }
 
     override fun post(reqUrl: String?, body: String?, headers: Map<String, String>): HttpResponse {
+        Log.i(TAG,"POST: $reqUrl")
         var status: Int = 0
         var response: String? = null
-        if(headers.isNotEmpty()){
-            Log.e(TAG, "Headers not yet implemented")
-            return HttpResponse(status = 0);
-        }
         try {
             val url = URL(reqUrl)
             val conn = url.openConnection() as HttpURLConnection
             conn.requestMethod = "POST"
+            for (header in headers) {
+                conn.setRequestProperty(header.key,header.value)
+            }
             Log.w("HttpClient","Posting: "+body)
             if( body != null){
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -116,6 +118,6 @@ class HttpClientImpl : HttpClient{
     }
 
     companion object {
-        private val TAG = HttpClientImpl::class.java.simpleName
+        private val TAG = HttpClientJavaImpl::class.java.simpleName
     }
 }
