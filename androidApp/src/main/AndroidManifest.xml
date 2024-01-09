@@ -15,7 +15,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".screens.HomeActivity"/>
-        <activity android:name=".screens.AddWorkspaceActivity"/>
+        <activity android:name=".AppActivity"/>
+        <activity android:name=".ui.AddWorkspaceActivity"/>
     </application>
 </manifest> 

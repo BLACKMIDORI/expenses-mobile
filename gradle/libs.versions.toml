@@ -11,6 +11,8 @@ compose-material3 = "1.1.2"
 androidx-activityCompose = "1.8.0"
 kotlinx-serialization-json = "1.6.0"
 kotlinxDatetime = "0.5.0"
+navigationRuntimeKtx = "2.7.6"
+navigationCompose = "2.7.6"
 
 [libraries]
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
@@ -26,6 +28,8 @@ compose-foundation = { module = "androidx.compose.foundation:foundation", versio
 compose-material3 = { module = "androidx.compose.material3:material3", version.ref = "compose-material3" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
 kotlinx-serialization-json = {module =  "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json"}
+androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

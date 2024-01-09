@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="google_oauth_server_client_id">962074932106-3lelfg2kt0i73pcmjgn0k2c4udb59t5a.apps.googleusercontent.com</string>
+
+    <string name="home_screen">Home Screen</string>
+    <string name="add_workspace">Add Workspace</string>
+    <string name="update_workspace">Update Workspace</string>
+    <string name="back_button">Back Button</string>
 </resources>

@@ -36,7 +36,6 @@ import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.models.AppUser
 import com.blackmidori.familyexpenses.models.AppUserTokens
 import com.blackmidori.familyexpenses.android.repositories.AuthRepository
-import com.blackmidori.familyexpenses.android.screens.HomeActivity
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
@@ -82,7 +81,7 @@ class MainActivity : ComponentActivity() {
                     context.startActivity(
                         Intent(
                             context,
-                            HomeActivity::class.java
+                            AppActivity::class.java
                         ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     )
                     sharedPreferences.edit().putString("refresh_token", response.refreshToken).apply()
@@ -202,7 +201,7 @@ class MainActivity : ComponentActivity() {
                 context.startActivity(
                     Intent(
                         context,
-                        HomeActivity::class.java
+                        AppActivity::class.java
                     ).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                 )
                 val sharedPreferences = context.getSharedPreferences("Tokens", Context.MODE_PRIVATE)

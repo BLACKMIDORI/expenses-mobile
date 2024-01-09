@@ -8,6 +8,7 @@ import com.blackmidori.familyexpenses.core.PagedList
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -69,6 +70,73 @@ class WorkspaceRepository(val baseUrl: String = Config.apiBaseUrl, val httpClien
                     responseBody["from"]!!.jsonPrimitive.int,
                     list.toTypedArray()
                 )
+            )
+        }
+    }
+
+    fun getOne(workspaceId: String): Result<Workspace> {
+        val response = httpClient.get(
+            "$baseUrl/v1/workspaces/${workspaceId}",
+            mapOf("Authorization" to Session.appUser.tokens.accessToken),
+        )
+        if (response.status != 200) {
+            return Result.failure(Exception(response.body))
+        }
+        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
+
+        if (responseBody == null) {
+            return Result.failure(Exception("http fetch error"))
+        } else {
+            return Result.success(
+                Workspace(
+                    id = responseBody["id"]!!.jsonPrimitive.content,
+                    creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
+                    name = responseBody["name"]!!.jsonPrimitive.content
+                )
+            )
+        }
+    }
+
+    fun update(workspace: Workspace): Result<Workspace> {
+        val requestBody = "{\"name\":\"${workspace.name}\"}"
+        val response = httpClient.put(
+            "$baseUrl/v1/workspaces/${workspace.id}",
+            requestBody,
+            mapOf("Authorization" to Session.appUser.tokens.accessToken),
+        )
+        if (response.status != 200) {
+            return Result.failure(Exception(response.body))
+        }
+        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
+
+        if (responseBody == null) {
+            return Result.failure(Exception("http fetch error"))
+        } else {
+            return Result.success(
+                Workspace(
+                    id = responseBody["id"]!!.jsonPrimitive.content,
+                    creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
+                    name = responseBody["name"]!!.jsonPrimitive.content
+                )
+            )
+        }
+    }
+
+    fun delete(workspace: Workspace): Result<Boolean> {
+        val response = httpClient.delete(
+            "$baseUrl/v1/workspaces/${workspace.id}",
+            mapOf("Authorization" to Session.appUser.tokens.accessToken),
+        )
+        if (response.status != 200) {
+            return Result.failure(Exception(response.body))
+        }
+        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
+
+        if (responseBody == null) {
+            return Result.failure(Exception("http fetch error"))
+        } else {
+            return Result.success(
+                responseBody["ok"]!!.jsonPrimitive.boolean
             )
         }
     }

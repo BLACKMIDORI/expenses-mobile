@@ -60,7 +60,6 @@ class HttpClientJavaImpl : HttpClient {
             for (header in headers) {
                 conn.setRequestProperty(header.key,header.value)
             }
-            Log.w("HttpClient","Posting: "+body)
             if( body != null){
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.outputStream.use { os ->
@@ -90,11 +89,74 @@ class HttpClientJavaImpl : HttpClient {
     }
 
     override fun put(reqUrl: String?, body: String?, headers: Map<String, String>): HttpResponse {
-        TODO("Not yet implemented")
+        Log.i(TAG,"PUT: $reqUrl")
+        var status: Int = 0
+        var response: String? = null
+        try {
+            val url = URL(reqUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "PUT"
+            for (header in headers) {
+                conn.setRequestProperty(header.key,header.value)
+            }
+            if( body != null){
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.outputStream.use { os ->
+                    val input: ByteArray = body.toByteArray(Charsets.UTF_8)
+                    os.write(input, 0, input.size)
+                }
+            }
+            status = conn.responseCode
+            try{
+                val `in`: InputStream = BufferedInputStream(conn.inputStream)
+                response = convertStreamToString(`in`)
+            } catch (e: IOException) {
+                Log.w(TAG, "IOException: [$status] $e")
+                val `in`: InputStream = BufferedInputStream(conn.errorStream)
+                response = convertStreamToString(`in`)
+            }
+        } catch (e: MalformedURLException) {
+            Log.e(TAG, "MalformedURLException: $e")
+        } catch (e: ProtocolException) {
+            Log.e(TAG, "ProtocolException: $e")
+        } catch (e: IOException) {
+            Log.e(TAG, "IOException: [$status] $e")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception: $e")
+        }
+        return HttpResponse(status = status, response);
     }
 
     override fun delete(reqUrl: String?, headers: Map<String, String>): HttpResponse {
-        TODO("Not yet implemented")
+        Log.i(TAG,"DELETE: $reqUrl")
+        var status: Int = 0
+        var response: String? = null
+        try {
+            val url = URL(reqUrl)
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "DELETE"
+            for (header in headers) {
+                conn.setRequestProperty(header.key,header.value)
+            }
+            status = conn.responseCode
+            try{
+                val `in`: InputStream = BufferedInputStream(conn.inputStream)
+                response = convertStreamToString(`in`)
+            } catch (e: IOException) {
+                Log.w(TAG, "IOException: [$status] $e")
+                val `in`: InputStream = BufferedInputStream(conn.errorStream)
+                response = convertStreamToString(`in`)
+            }
+        } catch (e: MalformedURLException) {
+            Log.e(TAG, "MalformedURLException: $e")
+        } catch (e: ProtocolException) {
+            Log.e(TAG, "ProtocolException: $e")
+        } catch (e: IOException) {
+            Log.e(TAG, "IOException: [$status] $e")
+        } catch (e: Exception) {
+            Log.e(TAG, "Exception: $e")
+        }
+        return HttpResponse(status = status, response);
     }
 
     private fun convertStreamToString(`is`: InputStream): String {
