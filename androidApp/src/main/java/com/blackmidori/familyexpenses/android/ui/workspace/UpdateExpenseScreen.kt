@@ -1,4 +1,4 @@
-package com.blackmidori.familyexpenses.android.ui
+package com.blackmidori.familyexpenses.android.ui.workspace
 
 import android.content.Context
 import android.util.Log
@@ -26,18 +26,19 @@ import com.blackmidori.familyexpenses.android.MyApplicationTheme
 import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
-import com.blackmidori.familyexpenses.models.Workspace
-import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.models.ChargesModel
+import com.blackmidori.familyexpenses.models.Expense
+import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
+import com.blackmidori.familyexpenses.repositories.ExpenseRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
 @Composable
-fun UpdateWorkspaceScreen(
+fun UpdateExpenseScreen(
     navController: NavHostController,
-    workspaceId:String,
-    onSuccess: ()->Unit,
-){
+    expenseId: String,
+) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var name by remember {
@@ -46,14 +47,14 @@ fun UpdateWorkspaceScreen(
 
     LaunchedEffect(key1 = null) {
         Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
-        fetchWorkspaceAsync(workspaceId, coroutineScope, context) {
+        fetchExpenseAsync(expenseId, coroutineScope, context) {
             name = it.name
         }
     }
     SimpleScaffold(topBar = {
         SimpleAppBar(
             navController = navController,
-            title = { Text(stringResource(AppScreen.UpdateWorkspace.title)) },
+            title = { Text(stringResource(AppScreen.UpdateExpense.title)) },
         )
     }) {
         Column {
@@ -62,19 +63,17 @@ fun UpdateWorkspaceScreen(
             })
             Button(onClick = {
                 Thread {
-                    val workspace = Workspace(workspaceId, Instant.DISTANT_PAST, name)
-                    val workspaceResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).update(workspace)
-                    if (workspaceResult.isFailure) {
-                        Log.w(
-                            "UpdateWorkspaceScreen",
-                            "Error: " + workspaceResult.exceptionOrNull()
-                        )
+                    val TAG = "UpdateExpenseScreen.update"
+                    val expense = Expense(expenseId, Instant.DISTANT_PAST, name)
+                    val expenseResult =
+                        ExpenseRepository(httpClient = HttpClientJavaImpl()).update(expense)
+                    if (expenseResult.isFailure) {
+                        Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
 
                         coroutineScope.launch {
                             Toast.makeText(
                                 context,
-                                "Error: ${workspaceResult.exceptionOrNull()}",
+                                "Error: ${expenseResult.exceptionOrNull()}",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -86,7 +85,6 @@ fun UpdateWorkspaceScreen(
                                 Toast.LENGTH_SHORT
                             ).show()
                             navController.navigateUp()
-                            onSuccess()
                         }
                     }
                 }.start()
@@ -96,55 +94,55 @@ fun UpdateWorkspaceScreen(
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                Thread {
-                    val workspace = Workspace(workspaceId, Instant.DISTANT_PAST, name)
-                    val deleteResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).delete(workspace)
-                    if (deleteResult.isFailure) {
-                        Log.w("DeleteWorkspaceScreen", "Error: " + deleteResult.exceptionOrNull())
+                    Thread {
+                        val TAG = "UpdateExpenseScreen.delete"
+                        val expense = Expense(expenseId, Instant.DISTANT_PAST, name)
+                        val deleteResult =
+                            ExpenseRepository(httpClient = HttpClientJavaImpl()).delete(expense)
+                        if (deleteResult.isFailure) {
+                            Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Error: ${deleteResult.exceptionOrNull()}",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            coroutineScope.launch {
+                                Toast.makeText(
+                                    context,
+                                    "Error: ${deleteResult.exceptionOrNull()}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        } else {
+                            coroutineScope.launch {
+                                Toast.makeText(
+                                    context,
+                                    "Deleted",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                navController.navigateUp()
+                            }
                         }
-                    } else {
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateUp()
-                            onSuccess()
-                        }
-                    }
-                }.start()
-            }) {
+                    }.start()
+                }) {
                 Text("Delete")
             }
         }
     }
 }
 
-private fun fetchWorkspaceAsync(
-    workspaceId: String,
+private fun fetchExpenseAsync(
+    expenseId: String,
     coroutineScope: CoroutineScope,
     context: Context,
-    onSuccess: (Workspace) -> Unit
+    onSuccess: (Expense) -> Unit
 ) {
-    val TAG = "fetchWorkspacesAsync"
+    val TAG = "UpdateExpenseScreen.fetchExpenseAsync"
     Thread {
-        val workspaceResult =
-            WorkspaceRepository(httpClient = HttpClientJavaImpl()).getOne(workspaceId)
-        if (workspaceResult.isFailure) {
-            Log.w(TAG, "Error: " + workspaceResult.exceptionOrNull())
+        val expenseResult =
+            ExpenseRepository(httpClient = HttpClientJavaImpl()).getOne(expenseId)
+        if (expenseResult.isFailure) {
+            Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
             coroutineScope.launch {
                 Toast.makeText(
                     context,
-                    "Error: ${workspaceResult.exceptionOrNull()}",
+                    "Error: ${expenseResult.exceptionOrNull()}",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -154,7 +152,7 @@ private fun fetchWorkspaceAsync(
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
-        onSuccess(workspaceResult.getOrNull()!!)
+        onSuccess(expenseResult.getOrNull()!!)
     }.start()
 }
 
@@ -162,6 +160,6 @@ private fun fetchWorkspaceAsync(
 @Composable
 private fun Preview() {
     MyApplicationTheme {
-        UpdateWorkspaceScreen(rememberNavController(),workspaceId = "fake",{})
+        UpdateExpenseScreen(rememberNavController(), expenseId = "fake")
     }
 }

@@ -2,8 +2,22 @@
 <resources>
     <string name="google_oauth_server_client_id">962074932106-3lelfg2kt0i73pcmjgn0k2c4udb59t5a.apps.googleusercontent.com</string>
 
+    <string name="back_button">Back Button</string>
+    <string name="update">Update</string>
     <string name="home_screen">Home Screen</string>
     <string name="add_workspace">Add Workspace</string>
     <string name="update_workspace">Update Workspace</string>
-    <string name="back_button">Back Button</string>
+    <string name="workspace">Workspace</string>
+    <string name="add_payer">Add Payer</string>
+    <string name="update_payer">Update Payer</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="update_expense">Update Expense</string>
+    <string name="add_charges_model">Add Charges Model</string>
+    <string name="update_charges_model">Update Charges Model</string>
+    <string name="charges_model">Charges Model</string>
+    <string name="add_charge_association">Add Charge Association</string>
+    <string name="update_charge_association">Update Charge Association</string>
+    <string name="charge_association">Charge Association</string>
+    <string name="add_payer_payment_weight">Add Payer Payment Weight</string>
+    <string name="update_payer_payment_weight">Update Payer Payment Weight</string>
 </resources>

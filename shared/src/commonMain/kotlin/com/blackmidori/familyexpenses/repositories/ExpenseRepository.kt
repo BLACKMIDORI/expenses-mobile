@@ -1,10 +1,9 @@
 package com.blackmidori.familyexpenses.repositories
 
 import com.blackmidori.familyexpenses.Config
-import com.blackmidori.familyexpenses.Session
 import com.blackmidori.familyexpenses.core.http.HttpClient
-import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.core.PagedList
+import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.services.TokensService
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
@@ -15,19 +14,20 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class WorkspaceRepository(
+class ExpenseRepository(
     val baseUrl: String = Config.apiBaseUrl,
     val httpClient: HttpClient,
     val tokensService: TokensService = TokensService(authRepository = AuthRepository(httpClient = httpClient)),
 ) {
-    fun add(workspace: Workspace): Result<Workspace> {
+    fun add(workspaceId: String, expense: Expense): Result<Expense> {
         val result = tokensService.getUpdatedAccessToken()
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
-        val requestBody = "{\"name\":\"${workspace.name}\"}"
+        val requestBody =
+            "{\"name\":\"${expense.name}\",\"workspace\":{\"id\":\"${workspaceId}\"}}"
         val response = httpClient.post(
-            "$baseUrl/v1/workspaces/",
+            "$baseUrl/v1/expenses/",
             requestBody,
             mapOf("Authorization" to accessToken),
         )
@@ -40,7 +40,7 @@ class WorkspaceRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             return Result.success(
-                Workspace(
+                Expense(
                     id = responseBody["id"]!!.jsonPrimitive.content,
                     creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
                     name = responseBody["name"]!!.jsonPrimitive.content
@@ -49,13 +49,13 @@ class WorkspaceRepository(
         }
     }
 
-    fun getPagedList(): Result<PagedList<Workspace>> {
+    fun getPagedList(workspaceId: String): Result<PagedList<Expense>> {
         val result = tokensService.getUpdatedAccessToken()
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
         val response = httpClient.get(
-            "$baseUrl/v1/workspaces/?size=999&from=0",
+            "$baseUrl/v1/expenses/?filter=workspace.id__$workspaceId&size=999&from=0",
             mapOf("Authorization" to accessToken),
         )
         if (response.status != 200) {
@@ -66,11 +66,11 @@ class WorkspaceRepository(
         if (responseBody == null) {
             return Result.failure(Exception("http fetch error"))
         } else {
-            val list = ArrayList<Workspace>()
+            val list = ArrayList<Expense>()
             for (jsonElement in responseBody["results"]!!.jsonArray) {
                 val obj = jsonElement.jsonObject
                 list.add(
-                    Workspace(
+                    Expense(
                         id = obj["id"]!!.jsonPrimitive.content,
                         creationDateTime = Instant.parse(obj["creationDateTime"]!!.jsonPrimitive.content),
                         name = obj["name"]!!.jsonPrimitive.content
@@ -87,13 +87,13 @@ class WorkspaceRepository(
         }
     }
 
-    fun getOne(workspaceId: String): Result<Workspace> {
+    fun getOne(expenseId: String): Result<Expense> {
         val result = tokensService.getUpdatedAccessToken()
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
         val response = httpClient.get(
-            "$baseUrl/v1/workspaces/${workspaceId}",
+            "$baseUrl/v1/expenses/${expenseId}",
             mapOf("Authorization" to accessToken),
         )
         if (response.status != 200) {
@@ -105,7 +105,7 @@ class WorkspaceRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             return Result.success(
-                Workspace(
+                Expense(
                     id = responseBody["id"]!!.jsonPrimitive.content,
                     creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
                     name = responseBody["name"]!!.jsonPrimitive.content
@@ -114,14 +114,14 @@ class WorkspaceRepository(
         }
     }
 
-    fun update(workspace: Workspace): Result<Workspace> {
+    fun update(expense: Expense): Result<Expense> {
         val result = tokensService.getUpdatedAccessToken()
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
-        val requestBody = "{\"name\":\"${workspace.name}\"}"
+        val requestBody = "{\"name\":\"${expense.name}\"}"
         val response = httpClient.put(
-            "$baseUrl/v1/workspaces/${workspace.id}",
+            "$baseUrl/v1/expenses/${expense.id}",
             requestBody,
             mapOf("Authorization" to accessToken),
         )
@@ -134,7 +134,7 @@ class WorkspaceRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             return Result.success(
-                Workspace(
+                Expense(
                     id = responseBody["id"]!!.jsonPrimitive.content,
                     creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
                     name = responseBody["name"]!!.jsonPrimitive.content
@@ -143,13 +143,13 @@ class WorkspaceRepository(
         }
     }
 
-    fun delete(workspace: Workspace): Result<Boolean> {
+    fun delete(expense: Expense): Result<Boolean> {
         val result = tokensService.getUpdatedAccessToken()
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
         val response = httpClient.delete(
-            "$baseUrl/v1/workspaces/${workspace.id}",
+            "$baseUrl/v1/expenses/${expense.id}",
             mapOf("Authorization" to accessToken),
         )
         if (response.status != 200) {

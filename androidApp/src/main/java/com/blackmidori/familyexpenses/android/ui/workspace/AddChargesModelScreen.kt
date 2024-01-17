@@ -1,4 +1,4 @@
-package com.blackmidori.familyexpenses.android.ui
+package com.blackmidori.familyexpenses.android.ui.workspace
 
 import android.util.Log
 import android.widget.Toast
@@ -22,15 +22,15 @@ import com.blackmidori.familyexpenses.android.MyApplicationTheme
 import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
-import com.blackmidori.familyexpenses.models.Workspace
-import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.models.ChargesModel
+import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
 @Composable
-fun AddWorkspaceScreen(
+fun AddChargesModelScreen(
     navController: NavHostController,
-    onSuccess: ()->Unit
+    workspaceId: String,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -41,7 +41,7 @@ fun AddWorkspaceScreen(
     SimpleScaffold(topBar = {
         SimpleAppBar(
             navController = navController,
-            title = { Text(stringResource(AppScreen.AddWorkspace.title)) },
+            title = { Text(stringResource(AppScreen.AddChargesModel.title)) },
         )
     }) {
         Column {
@@ -50,16 +50,17 @@ fun AddWorkspaceScreen(
             })
             Button(onClick = {
                 Thread {
-                    val workspace = Workspace("", Instant.DISTANT_PAST, name)
-                    val workspaceResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).add(workspace)
-                    if (workspaceResult.isFailure) {
-                        Log.w("AddWorkspaceScreen", "Error: " + workspaceResult.exceptionOrNull())
+                    val TAG = "AddChargesModel.submit"
+                    val chargesModel = ChargesModel("", Instant.DISTANT_PAST, name)
+                    val chargesModelResult =
+                        ChargesModelRepository(httpClient = HttpClientJavaImpl()).add(workspaceId, chargesModel)
+                    if (chargesModelResult.isFailure) {
+                        Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
 
                         coroutineScope.launch {
                             Toast.makeText(
                                 context,
-                                "Error: ${workspaceResult.exceptionOrNull()}",
+                                "Error: ${chargesModelResult.exceptionOrNull()}",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -71,7 +72,6 @@ fun AddWorkspaceScreen(
                                 Toast.LENGTH_SHORT
                             ).show()
                             navController.navigateUp()
-                            onSuccess()
                         }
                     }
                 }.start()
@@ -87,6 +87,6 @@ fun AddWorkspaceScreen(
 @Composable
 private fun Preview() {
     MyApplicationTheme {
-        AddWorkspaceScreen(rememberNavController(),{})
+        AddChargesModelScreen(rememberNavController(),"fake")
     }
 }

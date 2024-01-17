@@ -35,7 +35,7 @@ import com.blackmidori.familyexpenses.Session
 import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.models.AppUser
 import com.blackmidori.familyexpenses.models.AppUserTokens
-import com.blackmidori.familyexpenses.android.repositories.AuthRepository
+import com.blackmidori.familyexpenses.repositories.AuthRepository
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import kotlinx.coroutines.launch
