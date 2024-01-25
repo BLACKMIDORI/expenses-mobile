@@ -5,6 +5,7 @@ import com.blackmidori.familyexpenses.core.http.HttpClient
 import com.blackmidori.familyexpenses.core.PagedList
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.Expense
+import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.services.TokensService
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
@@ -29,7 +30,7 @@ class ChargeAssociationRepository(
         val accessToken = result.getOrThrow()
 
         val requestBody =
-            "{\"name\":\"${chargeAssociation.name}\",\"chargesModel\":{\"id\":\"${chargesModelId}\"},\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"}}"
+            "{\"name\":\"${chargeAssociation.name}\",\"chargesModel\":{\"id\":\"${chargesModelId}\"},\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"},\"actualPayer\":{\"id\":\"${chargeAssociation.actualPayer.id}\"}}"
         val response = httpClient.post(
             "$baseUrl/v1/charge-associations/",
             requestBody,
@@ -44,6 +45,7 @@ class ChargeAssociationRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
+            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
             return Result.success(
                 ChargeAssociation(
                     id = responseBody["id"]!!.jsonPrimitive.content,
@@ -53,6 +55,11 @@ class ChargeAssociationRepository(
                         expenseId,
                         Instant.DISTANT_PAST,
                         expenseId
+                    ),
+                    Payer(
+                        actualPayerId,
+                        Instant.DISTANT_PAST,
+                        actualPayerId
                     )
                 )
             )
@@ -80,6 +87,7 @@ class ChargeAssociationRepository(
             for (jsonElement in responseBody["results"]!!.jsonArray) {
                 val obj = jsonElement.jsonObject
                 val expenseId = obj["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
+                val actualPayerId = obj["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
                 list.add(
                     ChargeAssociation(
                         id = obj["id"]!!.jsonPrimitive.content,
@@ -89,6 +97,11 @@ class ChargeAssociationRepository(
                             expenseId,
                             Instant.DISTANT_PAST,
                             expenseId
+                        ),
+                        Payer(
+                            actualPayerId,
+                            Instant.DISTANT_PAST,
+                            actualPayerId
                         )
                     )
                 )
@@ -121,6 +134,7 @@ class ChargeAssociationRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
+            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
             return Result.success(
                 ChargeAssociation(
                     id = responseBody["id"]!!.jsonPrimitive.content,
@@ -130,6 +144,11 @@ class ChargeAssociationRepository(
                         expenseId,
                         Instant.DISTANT_PAST,
                         expenseId
+                    ),
+                    Payer(
+                        actualPayerId,
+                        Instant.DISTANT_PAST,
+                        actualPayerId
                     )
                 )
             )
@@ -141,7 +160,7 @@ class ChargeAssociationRepository(
         if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
         val accessToken = result.getOrThrow()
 
-        val requestBody = "{\"name\":\"${chargeAssociation.name}\",\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"}}"
+        val requestBody = "{\"name\":\"${chargeAssociation.name}\",\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"},\"actualPayer\":{\"id\":\"${chargeAssociation.actualPayer.id}\"}}"
         val response = httpClient.put(
             "$baseUrl/v1/charge-associations/${chargeAssociation.id}",
             requestBody,
@@ -156,6 +175,7 @@ class ChargeAssociationRepository(
             return Result.failure(Exception("http fetch error"))
         } else {
             val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
+            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
             return Result.success(
                 ChargeAssociation(
                     id = responseBody["id"]!!.jsonPrimitive.content,
@@ -165,6 +185,11 @@ class ChargeAssociationRepository(
                         expenseId,
                         Instant.DISTANT_PAST,
                         expenseId
+                    ),
+                    Payer(
+                        actualPayerId,
+                        Instant.DISTANT_PAST,
+                        actualPayerId
                     )
                 )
             )

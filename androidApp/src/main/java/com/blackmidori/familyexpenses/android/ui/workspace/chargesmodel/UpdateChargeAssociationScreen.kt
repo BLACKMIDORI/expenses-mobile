@@ -33,8 +33,10 @@ import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.Expense
+import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
+import com.blackmidori.familyexpenses.repositories.PayerRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -54,6 +56,9 @@ fun UpdateChargeAssociationScreen(
     var expenses by remember {
         mutableStateOf(arrayOf<Expense>())
     }
+    var payers by remember {
+        mutableStateOf(arrayOf<Payer>())
+    }
 
     LaunchedEffect(key1 = null) {
         Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
@@ -62,6 +67,9 @@ fun UpdateChargeAssociationScreen(
         }
         fetchExpensesAsync(workspaceId, coroutineScope, context) {
             expenses = it
+        }
+        fetchPayersAsync(workspaceId, coroutineScope, context) {
+            payers = it
         }
     }
     SimpleScaffold(topBar = {
@@ -77,12 +85,13 @@ fun UpdateChargeAssociationScreen(
                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
                     it,
                     chargeAssociation?.expense ?: Expense("", Instant.DISTANT_PAST, ""),
+                    chargeAssociation?.actualPayer ?: Payer("", Instant.DISTANT_PAST, ""),
                 )
             })
-            var expanded by remember {
+            var expensesExpanded by remember {
                 mutableStateOf(false)
             }
-            ExposedDropdownMenuBox(expanded = expanded, { expanded = it }) {
+            ExposedDropdownMenuBox(expanded = expensesExpanded, { expensesExpanded = it }) {
 
                 val expenseId = chargeAssociation?.expense?.id
                 TextField(
@@ -90,13 +99,13 @@ fun UpdateChargeAssociationScreen(
                         ?: chargeAssociation?.expense?.name ?: "",
                     onValueChange = {},
                     readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expensesExpanded) },
                     modifier = Modifier.menuAnchor()
                 )
 
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    expanded = expensesExpanded,
+                    onDismissRequest = { expensesExpanded = false }
                 ) {
                     if (expenses.isEmpty()) {
                         Text(text = "Empty")
@@ -111,8 +120,58 @@ fun UpdateChargeAssociationScreen(
                                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
                                     chargeAssociation?.name ?: "",
                                     item,
+                                    chargeAssociation?.actualPayer ?: Payer(
+                                        "",
+                                        Instant.DISTANT_PAST,
+                                        ""
+                                    )
                                 )
-                                expanded = false
+                                expensesExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            var payersExpanded by remember {
+                mutableStateOf(false)
+            }
+            ExposedDropdownMenuBox(expanded = payersExpanded, { payersExpanded = it }) {
+
+                val payerId = chargeAssociation?.actualPayer?.id
+                TextField(
+                    value = payers.find { it.id == payerId }?.name
+                        ?: chargeAssociation?.actualPayer?.name ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payersExpanded) },
+                    modifier = Modifier.menuAnchor()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = payersExpanded,
+                    onDismissRequest = { payersExpanded = false }
+                ) {
+                    if (payers.isEmpty()) {
+                        Text(text = "Empty")
+                    }
+
+                    for (item in payers) {
+                        DropdownMenuItem(
+                            text = { Text(text = item.name) },
+                            onClick = {
+                                chargeAssociation = ChargeAssociation(
+                                    chargeAssociation?.id ?: "",
+                                    chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
+                                    chargeAssociation?.name ?: "",
+                                    chargeAssociation?.expense ?: Expense(
+                                        "",
+                                        Instant.DISTANT_PAST,
+                                        ""
+                                    ),
+                                    item,
+                                )
+                                payersExpanded = false
                             }
                         )
                     }
@@ -244,6 +303,34 @@ private fun fetchExpensesAsync(
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(expensesResult.getOrNull()!!.results)
+    }.start()
+}
+
+private fun fetchPayersAsync(
+    workspaceId: String,
+    coroutineScope: CoroutineScope,
+    context: Context,
+    onSuccess: (Array<Payer>) -> Unit
+) {
+    val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
+    Thread {
+        val payersResult =
+            PayerRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+        if (payersResult.isFailure) {
+            Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
+            coroutineScope.launch {
+                Toast.makeText(
+                    context,
+                    "Error: ${payersResult.exceptionOrNull()}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return@Thread;
+        }
+        coroutineScope.launch {
+            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+        }
+        onSuccess(payersResult.getOrNull()!!.results)
     }.start()
 }
 

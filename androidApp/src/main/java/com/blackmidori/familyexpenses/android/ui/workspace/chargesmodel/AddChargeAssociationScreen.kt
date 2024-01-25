@@ -57,17 +57,23 @@ fun AddChargeAssociationScreen(
         mutableStateOf(arrayOf<Expense>())
     }
 
+    var payers by remember {
+        mutableStateOf(arrayOf<Payer>())
+    }
     LaunchedEffect(key1 = null) {
         Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
 
         fetchExpensesAsync(workspaceId, coroutineScope, context) {
             expenses = it
         }
+        fetchPayersAsync(workspaceId, coroutineScope, context) {
+            payers = it
+        }
     }
     SimpleScaffold(topBar = {
         SimpleAppBar(
             navController = navController,
-            title = { Text(stringResource(AppScreen.UpdateChargeAssociation.title)) },
+            title = { Text(stringResource(AppScreen.AddChargeAssociation.title)) },
         )
     }) {
         Column {
@@ -77,12 +83,13 @@ fun AddChargeAssociationScreen(
                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
                     it,
                     chargeAssociation?.expense ?: Expense("", Instant.DISTANT_PAST, ""),
+                    chargeAssociation?.actualPayer ?: Payer("", Instant.DISTANT_PAST, ""),
                 )
             })
-            var expanded by remember {
+            var expensesExpanded by remember {
                 mutableStateOf(false)
             }
-            ExposedDropdownMenuBox(expanded = expanded, { expanded = it }) {
+            ExposedDropdownMenuBox(expanded = expensesExpanded, { expensesExpanded = it }) {
 
                 val expenseId = chargeAssociation?.expense?.id
                 TextField(
@@ -90,13 +97,13 @@ fun AddChargeAssociationScreen(
                         ?: chargeAssociation?.expense?.name ?: "",
                     onValueChange = {},
                     readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expensesExpanded) },
                     modifier = Modifier.menuAnchor()
                 )
 
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    expanded = expensesExpanded,
+                    onDismissRequest = { expensesExpanded = false }
                 ) {
                     if (expenses.isEmpty()) {
                         Text(text = "Empty")
@@ -111,8 +118,59 @@ fun AddChargeAssociationScreen(
                                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
                                     chargeAssociation?.name ?: "",
                                     item,
+                                    chargeAssociation?.actualPayer ?: Payer(
+                                        "",
+                                        Instant.DISTANT_PAST,
+                                        ""
+                                    )
                                 )
-                                expanded = false
+                                expensesExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+
+            var payersExpanded by remember {
+                mutableStateOf(false)
+            }
+            ExposedDropdownMenuBox(expanded = payersExpanded, { payersExpanded = it }) {
+
+                val payerId = chargeAssociation?.actualPayer?.id
+                TextField(
+                    value = payers.find { it.id == payerId }?.name
+                        ?: chargeAssociation?.actualPayer?.name ?: "",
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = payersExpanded) },
+                    modifier = Modifier.menuAnchor()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = payersExpanded,
+                    onDismissRequest = { payersExpanded = false }
+                ) {
+                    if (payers.isEmpty()) {
+                        Text(text = "Empty")
+                    }
+
+                    for (item in payers) {
+                        DropdownMenuItem(
+                            text = { Text(text = item.name) },
+                            onClick = {
+                                chargeAssociation = ChargeAssociation(
+                                    chargeAssociation?.id ?: "",
+                                    chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
+                                    chargeAssociation?.name ?: "",
+                                    chargeAssociation?.expense ?: Expense(
+                                        "",
+                                        Instant.DISTANT_PAST,
+                                        ""
+                                    ),
+                                    item,
+                                )
+                                payersExpanded = false
                             }
                         )
                     }
@@ -211,6 +269,33 @@ private fun fetchExpensesAsync(
     }.start()
 }
 
+private fun fetchPayersAsync(
+    workspaceId: String,
+    coroutineScope: CoroutineScope,
+    context: Context,
+    onSuccess: (Array<Payer>) -> Unit
+) {
+    val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
+    Thread {
+        val payersResult =
+            PayerRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+        if (payersResult.isFailure) {
+            Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
+            coroutineScope.launch {
+                Toast.makeText(
+                    context,
+                    "Error: ${payersResult.exceptionOrNull()}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            return@Thread;
+        }
+        coroutineScope.launch {
+            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+        }
+        onSuccess(payersResult.getOrNull()!!.results)
+    }.start()
+}
 @Preview
 @Composable
 private fun Preview() {

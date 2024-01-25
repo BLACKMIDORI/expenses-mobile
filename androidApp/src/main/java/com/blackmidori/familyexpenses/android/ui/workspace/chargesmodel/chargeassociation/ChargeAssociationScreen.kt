@@ -37,6 +37,7 @@ import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.models.Expense
+import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.models.PayerPaymentWeight
 import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
@@ -56,7 +57,15 @@ fun ChargeAssociationScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var chargeAssociation by remember {
-        mutableStateOf(ChargeAssociation("", Instant.DISTANT_PAST, "", Expense("",Instant.DISTANT_PAST,"")))
+        mutableStateOf(
+            ChargeAssociation(
+                "",
+                Instant.DISTANT_PAST,
+                "",
+                Expense("", Instant.DISTANT_PAST, ""),
+                Payer("", Instant.DISTANT_PAST, "")
+            )
+        )
     }
     var list by remember {
         mutableStateOf(arrayOf<PayerPaymentWeight>())
@@ -142,7 +151,9 @@ private fun fetchChargeAssociationAsync(
     val TAG = "ChargeAssociationScreen.fetchChargeAssociationAsync"
     Thread {
         val chargeAssociationResult =
-            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getOne(chargeAssociationId)
+            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getOne(
+                chargeAssociationId
+            )
         if (chargeAssociationResult.isFailure) {
             Log.w(TAG, "Error: " + chargeAssociationResult.exceptionOrNull())
             coroutineScope.launch {
@@ -196,6 +207,6 @@ private fun fetchPayerPaymentWeightsAsync(
 @Composable
 private fun Preview() {
     MyApplicationTheme {
-        ChargeAssociationScreen(rememberNavController(), "fake","")
+        ChargeAssociationScreen(rememberNavController(), "fake", "")
     }
 }
