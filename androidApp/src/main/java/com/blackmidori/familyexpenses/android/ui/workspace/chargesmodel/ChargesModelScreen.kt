@@ -95,6 +95,16 @@ fun ChargesModelScreen(
         )
     }
 
+    val onCalculateClick={
+        navController.navigate(
+            AppScreen.Calculation.route.replace(
+                "{chargesModelId}", chargesModelId
+            ).replace(
+                "{workspaceId}", workspaceId
+            )
+        )
+    }
+
     SimpleScaffold(
         topBar = {
             SimpleAppBar(
@@ -110,13 +120,7 @@ fun ChargesModelScreen(
                         containerColor = Color.Blue,
                         contentColor = Color.White
                     ),
-                    onClick = {
-                        Toast.makeText(
-                            context,
-                            "Not implemented yet",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
+                    onClick = onCalculateClick
                 ) {
                     Text("Calculate charges for expenses")
                 }

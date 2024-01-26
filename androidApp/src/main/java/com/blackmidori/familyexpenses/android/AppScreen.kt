@@ -30,6 +30,7 @@ import com.blackmidori.familyexpenses.android.ui.workspace.WorkspaceScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.AddChargeAssociationScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.ChargesModelScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.UpdateChargeAssociationScreen
+import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.calculation.CalculationScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeassociation.AddPayerPaymentWeightScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeassociation.ChargeAssociationScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeassociation.UpdatePayerPaymentWeightScreen
@@ -91,6 +92,10 @@ enum class AppScreen(@StringRes val title: Int, val route: String) {
     UpdatePayerPaymentWeight(
         title = R.string.update_payer_payment_weight,
         route = UpdatePayerPaymentWeight.name + "/{id}/{workspaceId}"
+    ),
+    Calculation(
+        title = R.string.calculation,
+        route = Calculation.name + "/{chargesModelId}/{workspaceId}"
     ),
 }
 
@@ -254,6 +259,15 @@ fun App(navController: NavHostController = rememberNavController()) {
                 UpdatePayerPaymentWeightScreen(
                     navController = navController,
                     payerPaymentWeightId = id!!,
+                    workspaceId = workspaceId!!,
+                )
+            }
+            composable(route = AppScreen.Calculation.route) { navBackStackEntry ->
+                val chargesModelId = navBackStackEntry.arguments?.getString("chargesModelId")
+                val workspaceId = navBackStackEntry.arguments?.getString("workspaceId")
+                CalculationScreen(
+                    navController = navController,
+                    chargesModelId = chargesModelId!!,
                     workspaceId = workspaceId!!,
                 )
             }

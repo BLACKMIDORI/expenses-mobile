@@ -20,4 +20,5 @@
     <string name="charge_association">Charge Association</string>
     <string name="add_payer_payment_weight">Add Payer Payment Weight</string>
     <string name="update_payer_payment_weight">Update Payer Payment Weight</string>
+    <string name="calculation">Calculation</string>
 </resources>
