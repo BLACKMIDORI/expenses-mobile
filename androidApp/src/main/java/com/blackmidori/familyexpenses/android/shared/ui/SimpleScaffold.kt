@@ -8,15 +8,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 
 @Composable
-fun SimpleScaffold(topBar: @Composable ()->Unit,content: @Composable BoxScope.() -> Unit) {
+fun SimpleScaffold(topBar: @Composable ()->Unit,floatingActionButton: @Composable ()->Unit = {}, content: @Composable BoxScope.() -> Unit) {
     Scaffold(
         topBar = {
             topBar()
-        }
+        },
+        floatingActionButton = floatingActionButton
     )
     { innerPadding ->
         Box(
-            Modifier.padding(innerPadding)
+            Modifier.padding(top = innerPadding.calculateTopPadding())
         ) {
             content()
         }

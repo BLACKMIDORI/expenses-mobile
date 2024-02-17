@@ -3,15 +3,22 @@ package com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,13 +43,12 @@ import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.ChargesModel
-import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
-import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChargesModelScreen(
     navController: NavHostController,
@@ -110,6 +116,14 @@ fun ChargesModelScreen(
             SimpleAppBar(
                 navController = navController,
                 title = { Text(stringResource(AppScreen.ChargesModel.title) + " - $name") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddClick) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_charge_association)
+                )
+            }
         }
     ) {
         LazyColumn {
@@ -125,32 +139,27 @@ fun ChargesModelScreen(
                     Text("Calculate charges for expenses")
                 }
             }
-            item {
-                Button(onClick = onAddClick) {
-                    Text("Add Charge Association")
-                }
-            }
             item { Text("Charge Association Count: ${list.size}") }
             for (item in list) {
                 item {
-                    Row {
-                        Button(onClick = {
+                    ListItem(
+                        modifier = Modifier.clickable {
                             onOpenClick(item.id)
-                        }) {
-                            Column {
-                                Text(item.name)
-                                Text(item.creationDateTime.toString())
+                        },
+                        headlineContent = { Text(item.name) },
+                        supportingContent = { Text(item.creationDateTime.toString()) },
+                        trailingContent = {
+                            IconButton({
+                                onUpdateClick(item.id)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.update_charge_association)
+                                )
                             }
-                        }
-                        Button(onClick = {
-                            onUpdateClick(item.id)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = stringResource(R.string.back_button)
-                            )
-                        }
-                    }
+
+                        },
+                    )
                 }
             }
         }

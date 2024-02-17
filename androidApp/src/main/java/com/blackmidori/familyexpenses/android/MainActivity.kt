@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -109,38 +110,47 @@ class MainActivity : ComponentActivity() {
         ) {
             val coroutineScope = rememberCoroutineScope()
             val context = LocalContext.current
-            Button(
+            Column(
                 modifier = Modifier.align(Alignment.Center),
-                onClick = {
-                    val googleIdRequest = getGoogleIdRequest()
+                ) {
+                Image(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    painter = painterResource(id = R.mipmap.logo),
+                    contentDescription = "logo"
+                )
+                Button(
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    onClick = {
+                        val googleIdRequest = getGoogleIdRequest()
 
-                    coroutineScope.launch {
-                        try {
-                            val credentialManager = CredentialManager.create(context)
-                            val result = credentialManager.getCredential(
-                                context,
-                                googleIdRequest,
-                            )
-                            when (val credential = result.credential) {
-                                is GoogleIdTokenCredential -> {
-                                    handleIdToken(context, credential.idToken)
+                        coroutineScope.launch {
+                            try {
+                                val credentialManager = CredentialManager.create(context)
+                                val result = credentialManager.getCredential(
+                                    context,
+                                    googleIdRequest,
+                                )
+                                when (val credential = result.credential) {
+                                    is GoogleIdTokenCredential -> {
+                                        handleIdToken(context, credential.idToken)
+                                    }
+                                }
+                            } catch (e: GetCredentialException) {
+                                Log.w(TAG, "handleSignInResult:error", e)
+
+                                this@MainActivity.runOnUiThread {
+                                    Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
                                 }
                             }
-                        } catch (e: GetCredentialException) {
-                            Log.w(TAG, "handleSignInResult:error", e)
-
-                            this@MainActivity.runOnUiThread {
-                                Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show()
-                            }
                         }
-                    }
-                },
-                contentPadding = PaddingValues(0.dp),
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.android_light_rd_ctn),
-                    contentDescription = ""
-                )
+                    },
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.android_light_rd_ctn),
+                        contentDescription = "google login"
+                    )
+                }
             }
         }
     }

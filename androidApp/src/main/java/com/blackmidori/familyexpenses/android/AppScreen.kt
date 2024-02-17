@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.StringRes
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,6 +101,7 @@ enum class AppScreen(@StringRes val title: Int, val route: String) {
 }
 
 @Composable
+@ExperimentalFoundationApi
 fun App(navController: NavHostController = rememberNavController()) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current

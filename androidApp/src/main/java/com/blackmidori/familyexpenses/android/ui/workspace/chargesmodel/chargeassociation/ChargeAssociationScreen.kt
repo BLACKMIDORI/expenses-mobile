@@ -3,15 +3,20 @@ package com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargea
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -107,35 +112,39 @@ fun ChargeAssociationScreen(
             SimpleAppBar(
                 navController = navController,
                 title = { Text(stringResource(AppScreen.ChargeAssociation.title) + " - ${chargeAssociation.name}") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onAddClick) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_payer_payment_weight)
+                )
+            }
         }
     ) {
         LazyColumn {
-            item {
-                Button(onClick = onAddClick) {
-                    Text("Add Payer Payment Weight")
-                }
-            }
             item { Text("Payer Payment Weight Count: ${list.size}") }
             for (item in list) {
                 item {
-                    Row {
-                        Button(onClick = {
-                            onOpenClick(item.id)
-                        }) {
-                            Column {
-                                Text(item.weight.toString())
-                                Text(item.creationDateTime.toString())
-                            }
-                        }
-                        Button(onClick = {
+
+                    ListItem(
+                        modifier = Modifier.clickable {
                             onUpdateClick(item.id)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = stringResource(R.string.back_button)
-                            )
-                        }
-                    }
+                        },
+                        headlineContent = { Text(item.weight.toString()) },
+                        supportingContent = { Text(item.creationDateTime.toString()) },
+                        trailingContent = {
+                            IconButton({
+                                onUpdateClick(item.id)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.update_charges_model)
+                                )
+                            }
+
+                        },
+                    )
                 }
             }
         }

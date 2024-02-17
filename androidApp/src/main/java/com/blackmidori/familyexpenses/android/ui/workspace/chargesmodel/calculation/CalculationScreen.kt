@@ -168,6 +168,9 @@ fun CalculationScreen(
                 for (payerId in charge.destination.keys) {
                     val bills = charge.destination.getValue(payerId)
                     for (bill in bills) {
+                        if(charge.source.id == payerId){
+                            continue;
+                        }
                         localResult+="${charge.source.name} 👉 ${getPayer(payerId).name}(${bill.expense.name}) = ${bill.amount}\n"
                     }
                 }
@@ -176,6 +179,9 @@ fun CalculationScreen(
             localResult+="Simplified:\n"
             for (charge in charges) {
                 for (payerId in charge.destination.keys) {
+                    if(charge.source.id == payerId){
+                        continue;
+                    }
                     val bills = charge.destination.getValue(payerId)
                     var sum = .0
                     for (bill in bills) {

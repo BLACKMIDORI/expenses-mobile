@@ -3,13 +3,24 @@ package com.blackmidori.familyexpenses.android.ui.workspace
 import android.content.Context
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,6 +53,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
+@ExperimentalFoundationApi
 fun WorkspaceScreen(
     navController: NavHostController,
     workspaceId: String,
@@ -49,9 +62,6 @@ fun WorkspaceScreen(
     val context = LocalContext.current
     var name by remember {
         mutableStateOf("")
-    }
-    var page by remember {
-        mutableStateOf("chargesModel")
     }
     var payers by remember {
         mutableStateOf(arrayOf<Payer>())
@@ -78,14 +88,14 @@ fun WorkspaceScreen(
         }
     }
 
-    val onAddPayerClick= {
+    val onAddPayerClick = {
         navController.navigate(
             AppScreen.AddPayer.route.replace("{workspaceId}", workspaceId)
         )
     }
-    val onOpenPayerClick: (id: String) -> Unit = {
-        Toast.makeText(context, "payer id: $it", Toast.LENGTH_SHORT).show()
-    }
+//    val onOpenPayerClick: (id: String) -> Unit = {
+//        Toast.makeText(context, "payer id: $it", Toast.LENGTH_SHORT).show()
+//    }
     val onUpdatePayerClick: (id: String) -> Unit = {
         navController.navigate(
             AppScreen.UpdatePayer.route.replace(
@@ -94,14 +104,14 @@ fun WorkspaceScreen(
         )
     }
 
-    val onAddExpenseClick= {
+    val onAddExpenseClick = {
         navController.navigate(
             AppScreen.AddExpense.route.replace("{workspaceId}", workspaceId)
         )
     }
-    val onOpenExpenseClick: (id: String) -> Unit = {
-        Toast.makeText(context, "expense id: $it", Toast.LENGTH_SHORT).show()
-    }
+//    val onOpenExpenseClick: (id: String) -> Unit = {
+//        Toast.makeText(context, "expense id: $it", Toast.LENGTH_SHORT).show()
+//    }
     val onUpdateExpenseClick: (id: String) -> Unit = {
         navController.navigate(
             AppScreen.UpdateExpense.route.replace(
@@ -110,7 +120,7 @@ fun WorkspaceScreen(
         )
     }
 
-    val onAddChargesModelClick= {
+    val onAddChargesModelClick = {
         navController.navigate(
             AppScreen.AddChargesModel.route.replace("{workspaceId}", workspaceId)
         )
@@ -128,122 +138,155 @@ fun WorkspaceScreen(
         )
     }
 
+    val pagerState = rememberPagerState(
+        initialPage = 2,
+        initialPageOffsetFraction = 0f,
+        pageCount = { 3 }
+    )
     SimpleScaffold(
         topBar = {
             SimpleAppBar(
                 navController = navController,
                 title = { Text(stringResource(AppScreen.Workspace.title) + " - $name") })
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = when (pagerState.currentPage) {
+                    0 -> onAddPayerClick
+                    1 -> onAddExpenseClick
+                    2 -> onAddChargesModelClick
+                    else -> {
+                        {}
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = when (pagerState.currentPage) {
+                        0 -> stringResource(R.string.add_payer)
+                        1 -> stringResource(R.string.add_expense)
+                        2 -> stringResource(R.string.add_charges_model)
+                        else -> null
+                    }
+                )
+            }
         }
     ) {
-        LazyColumn {
-            item {
-                Row{
-                    Button(onClick = {page = "payer"}) {
-                        Text("Payers")
+
+        Column {
+            TabRow(
+                selectedTabIndex = pagerState.currentPage,
+            ) {
+                Tab(
+                    selected = 0 == pagerState.currentPage,
+                    text = { Text("Payers") },
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
+                )
+                Tab(
+                    selected = 0 == pagerState.currentPage,
+                    text = { Text("Expenses") },
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
+                )
+                Tab(
+                    selected = 0 == pagerState.currentPage,
+                    text = { Text("Charges Models") },
+                    onClick = { coroutineScope.launch { pagerState.animateScrollToPage(2) } },
+                )
+            }
+
+            HorizontalPager(
+                state = pagerState
+            ) {
+                if(it == 0)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    item { Text("Payer Count: ${payers.size}") }
+                    for (item in payers) {
+                        item {
+                            ListItem(
+                                modifier = Modifier.clickable {
+                                    onUpdatePayerClick(item.id)
+                                },
+                                headlineContent = { Text(item.name) },
+                                supportingContent = { Text(item.creationDateTime.toString()) },
+                                trailingContent = {
+                                    IconButton({
+                                        onUpdatePayerClick(item.id)
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Edit,
+                                            contentDescription = stringResource(R.string.update_payer)
+                                        )
+                                    }
+
+                                },
+                            )
+                        }
                     }
-                    Button(onClick = {page = "expense"}) {
-                        Text("Expenses")
+
+
+                }
+
+                if(it == 1)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    item { Text("Expense Count: ${expenses.size}") }
+                    for (item in expenses) {
+                        item {
+
+                            ListItem(
+                                modifier = Modifier.clickable {
+                                    onUpdateExpenseClick(item.id)
+                                },
+                                headlineContent = { Text(item.name) },
+                                supportingContent = { Text(item.creationDateTime.toString()) },
+                                trailingContent = {
+                                    IconButton({
+                                        onUpdateExpenseClick(item.id)
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Edit,
+                                            contentDescription = stringResource(R.string.update_expense)
+                                        )
+                                    }
+
+                                },
+                            )
+                        }
                     }
-                    Button(onClick = {page = "chargesModel"}) {
-                        Text("Charges Models")
+                }
+
+                if(it == 2)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    item { Text("Charges Model Count: ${chargesModels.size}") }
+                    for (item in chargesModels) {
+                        item {
+                            ListItem(
+                                modifier = Modifier.clickable {
+                                    onOpenChargesModelClick(item.id)
+                                },
+                                headlineContent = { Text(item.name) },
+                                supportingContent = { Text(item.creationDateTime.toString()) },
+                                trailingContent = {
+                                    IconButton({
+                                        onUpdateChargesModelClick(item.id)
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Edit,
+                                            contentDescription = stringResource(R.string.update_charges_model)
+                                        )
+                                    }
+
+                                },
+                            )
+                        }
                     }
                 }
             }
-            if(page == "payer")
-                item {
-                    Button(onClick = onAddPayerClick) {
-                        Text("Add Payer")
-                    }
-                }
-            if(page == "payer")
-                item { Text("Payer Count: ${payers.size}") }
-            if(page == "payer")
-                for (item in payers) {
-                    item {
-                        Row {
-                            Button(onClick = {
-                                onOpenPayerClick(item.id)
-                            }) {
-                                Column {
-                                    Text(item.name)
-                                    Text(item.creationDateTime.toString())
-                                }
-                            }
-                            Button(onClick = {
-                                onUpdatePayerClick(item.id)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = stringResource(R.string.back_button)
-                                )
-                            }
-                        }
-                    }
-                }
-
-            if(page == "expense")
-                item {
-                    Button(onClick = onAddExpenseClick) {
-                        Text("Add Expense")
-                    }
-                }
-            if(page == "expense")
-                item { Text("Expense Count: ${expenses.size}") }
-            if(page == "expense")
-                for (item in expenses) {
-                    item {
-                        Row {
-                            Button(onClick = {
-                                onOpenExpenseClick(item.id)
-                            }) {
-                                Column {
-                                    Text(item.name)
-                                    Text(item.creationDateTime.toString())
-                                }
-                            }
-                            Button(onClick = {
-                                onUpdateExpenseClick(item.id)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = stringResource(R.string.back_button)
-                                )
-                            }
-                        }
-                    }
-                }
-
-            if(page == "chargesModel")
-                item {
-                    Button(onClick = onAddChargesModelClick) {
-                        Text("Add Charges Model")
-                    }
-                }
-            if(page == "chargesModel")
-                item { Text("Charges Model Count: ${chargesModels.size}") }
-            if(page == "chargesModel")
-                for (item in chargesModels) {
-                    item {
-                        Row {
-                            Button(onClick = {
-                                onOpenChargesModelClick(item.id)
-                            }) {
-                                Column {
-                                    Text(item.name)
-                                    Text(item.creationDateTime.toString())
-                                }
-                            }
-                            Button(onClick = {
-                                onUpdateChargesModelClick(item.id)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = stringResource(R.string.back_button)
-                                )
-                            }
-                        }
-                    }
-                }
         }
     }
 }
@@ -304,6 +347,7 @@ private fun fetchPayersAsync(
         onSuccess(payersResult.getOrNull()!!.results)
     }.start()
 }
+
 private fun fetchExpensesAsync(
     workspaceId: String,
     coroutineScope: CoroutineScope,
@@ -331,6 +375,7 @@ private fun fetchExpensesAsync(
         onSuccess(expensesResult.getOrNull()!!.results)
     }.start()
 }
+
 private fun fetchChargesModelsAsync(
     workspaceId: String,
     coroutineScope: CoroutineScope,
@@ -361,6 +406,7 @@ private fun fetchChargesModelsAsync(
 
 @Preview
 @Composable
+@ExperimentalFoundationApi
 private fun Preview() {
     MyApplicationTheme {
         WorkspaceScreen(rememberNavController(), "fake")

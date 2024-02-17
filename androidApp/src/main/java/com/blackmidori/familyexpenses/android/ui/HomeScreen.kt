@@ -1,14 +1,21 @@
 package com.blackmidori.familyexpenses.android.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
@@ -28,39 +35,46 @@ fun HomeScreen(
     onClickOpenWorkspace: (workspaceId: String) -> Unit = {},
     onClickAddWorkspace: () -> Unit = {},
 ) {
-    SimpleScaffold(topBar = {
-        SimpleAppBar(
-            navController = navController,
-            title = { Text(stringResource(AppScreen.Home.title)) },
-        )
-    }) {
-        LazyColumn {
-            item {
-                Button(onClick = onClickAddWorkspace) {
-                    Text("Add Workspace")
-                }
+    SimpleScaffold(
+        topBar = {
+            SimpleAppBar(
+                navController = navController,
+                title = { Text(stringResource(AppScreen.Home.title)) },
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onClickAddWorkspace) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.add_workspace)
+                )
             }
+        }
+    ) {
+
+        LazyColumn {
             item { Text("Workspace Count: ${list.size}") }
-            for (workspace in list) {
+            for (item in list) {
                 item {
-                    Row {
-                        Button(onClick = {
-                            onClickOpenWorkspace(workspace.id)
-                        }) {
-                            Column {
-                                Text(workspace.name)
-                                Text(workspace.creationDateTime.toString())
+
+                    ListItem(
+                        modifier = Modifier.clickable {
+                            onClickOpenWorkspace(item.id)
+                        },
+                        headlineContent = { Text(item.name) },
+                        supportingContent = { Text(item.creationDateTime.toString()) },
+                        trailingContent = {
+                            IconButton({
+                                onClickUpdateWorkspace(item.id)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.update_workspace)
+                                )
                             }
-                        }
-                        Button(onClick = {
-                            onClickUpdateWorkspace(workspace.id)
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = stringResource(R.string.back_button)
-                            )
-                        }
-                    }
+
+                        },
+                    )
                 }
             }
         }
