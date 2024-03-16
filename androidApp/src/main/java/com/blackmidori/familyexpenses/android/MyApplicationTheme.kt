@@ -22,7 +22,8 @@ fun MyApplicationTheme(
 ) {
     val colors = darkColorScheme(
         primary = Color(0xFF00a770),
-        secondary = Color(0xFF8c74d2),
+        secondary = Color(0xFF00a770),
+//        secondary = Color(0xFF8c74d2),
 //        tertiary = Color(0xFF493b6e),
         background = Color(0xFF1b1c1e)
     )

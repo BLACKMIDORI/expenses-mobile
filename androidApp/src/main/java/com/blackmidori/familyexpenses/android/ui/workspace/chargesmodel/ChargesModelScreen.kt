@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -118,7 +119,10 @@ fun ChargesModelScreen(
                 title = { Text(stringResource(AppScreen.ChargesModel.title) + " - $name") })
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onAddClick) {
+            FloatingActionButton(
+                onClick = onAddClick,
+                shape = CircleShape
+            ) {
                 Icon(
                     imageVector = Icons.Filled.Add,
                     contentDescription = stringResource(R.string.add_charge_association)

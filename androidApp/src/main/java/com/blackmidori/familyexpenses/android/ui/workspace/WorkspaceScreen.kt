@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
@@ -158,7 +159,8 @@ fun WorkspaceScreen(
                     else -> {
                         {}
                     }
-                }
+                },
+                shape = CircleShape
             ) {
                 Icon(
                     imageVector = Icons.Filled.Add,

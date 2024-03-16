@@ -177,6 +177,7 @@ class MainActivity : ComponentActivity() {
         val googleIdOption: CredentialOption = GetGoogleIdOption.Builder()
             .setServerClientId(getString(R.string.google_oauth_server_client_id))
             .setNonce(UUID.randomUUID().toString())
+            .setFilterByAuthorizedAccounts(false)
             .build()
         return GetCredentialRequest.Builder()
             .addCredentialOption(googleIdOption)
