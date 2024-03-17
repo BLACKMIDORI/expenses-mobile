@@ -19,13 +19,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -51,11 +51,11 @@ fun AddPayerScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "AddPayerScreen.submit"
-                    val payer = Payer("", Instant.DISTANT_PAST, name)
+                    val payer = Payer("", Instant.DISTANT_PAST, workspaceId,name)
                     val payerResult =
-                        PayerRepository(httpClient = HttpClientJavaImpl()).add(workspaceId, payer)
+                        PayerRepository(payerStore(context)).add(workspaceId, payer)
                     if (payerResult.isFailure) {
                         Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
 
@@ -76,7 +76,7 @@ fun AddPayerScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }

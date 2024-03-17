@@ -30,17 +30,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
-import com.blackmidori.familyexpenses.models.ChargeAssociation
-import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.models.PayerPaymentWeight
-import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
-import com.blackmidori.familyexpenses.repositories.ExpenseRepository
 import com.blackmidori.familyexpenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
+import com.blackmidori.familyexpenses.stores.payerPaymentWeightStore
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -89,8 +86,9 @@ fun UpdatePayerPaymentWeightScreen(
                     payerPaymentWeight = PayerPaymentWeight(
                         payerPaymentWeight?.id ?: "",
                         payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
+                        payerPaymentWeight?.chargeAssociationId ?: "",
                         weight ?: .0,
-                        payerPaymentWeight?.payer ?: Payer("", Instant.DISTANT_PAST, ""),
+                        payerPaymentWeight?.payer ?: Payer("", Instant.DISTANT_PAST, "",""),
                     )
                 })
             var expanded by remember {
@@ -123,6 +121,7 @@ fun UpdatePayerPaymentWeightScreen(
                                 payerPaymentWeight = PayerPaymentWeight(
                                     payerPaymentWeight?.id ?: "",
                                     payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
+                                    payerPaymentWeight?.chargeAssociationId ?: "",
                                     payerPaymentWeight?.weight ?: .0,
                                     item,
                                 )
@@ -133,11 +132,14 @@ fun UpdatePayerPaymentWeightScreen(
                 }
             }
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "UpdatePayerPaymentWeightScreen.update"
-                    val localPayerPaymentWeight = payerPaymentWeight ?: return@Thread
+                    val localPayerPaymentWeight = payerPaymentWeight ?: return@launch
                     val payerPaymentWeightResult =
-                        PayerPaymentWeightRepository(httpClient = HttpClientJavaImpl()).update(
+                        PayerPaymentWeightRepository(
+                            payerPaymentWeightStore(context),
+                            payerStore(context),
+                        ).update(
                             localPayerPaymentWeight
                         )
                     if (payerPaymentWeightResult.isFailure) {
@@ -160,19 +162,22 @@ fun UpdatePayerPaymentWeightScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                    Thread {
+                    coroutineScope.launch {
                         val TAG = "UpdatePayerPaymentWeightScreen.delete"
-                        val localPayerPaymentWeight = payerPaymentWeight ?: return@Thread
+                        val localPayerPaymentWeight = payerPaymentWeight ?: return@launch
                         val deleteResult =
-                            PayerPaymentWeightRepository(httpClient = HttpClientJavaImpl()).delete(
-                                localPayerPaymentWeight
+                            PayerPaymentWeightRepository(
+                                payerPaymentWeightStore(context),
+                                payerStore(context),
+                            ).delete(
+                                localPayerPaymentWeight.id
                             )
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
@@ -194,7 +199,7 @@ fun UpdatePayerPaymentWeightScreen(
                                 navController.navigateUp()
                             }
                         }
-                    }.start()
+                    }
                 }) {
                 Text("Delete")
             }
@@ -209,9 +214,12 @@ private fun fetchPayerPaymentWeightAsync(
     onSuccess: (PayerPaymentWeight) -> Unit
 ) {
     val TAG = "UpdatePayerPaymentWeightScreen.fetchPayerPaymentWeightAsync"
-    Thread {
+    coroutineScope.launch {
         val payerPaymentWeightResult =
-            PayerPaymentWeightRepository(httpClient = HttpClientJavaImpl()).getOne(
+            PayerPaymentWeightRepository(
+                payerPaymentWeightStore(context),
+                payerStore(context),
+            ).getOne(
                 payerPaymentWeightId
             )
         if (payerPaymentWeightResult.isFailure) {
@@ -223,14 +231,14 @@ private fun fetchPayerPaymentWeightAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(payerPaymentWeightResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchPayersAsync(
@@ -240,9 +248,9 @@ private fun fetchPayersAsync(
     onSuccess: (Array<Payer>) -> Unit
 ) {
     val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
-    Thread {
+    coroutineScope.launch {
         val payersResult =
-            PayerRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            PayerRepository(payerStore(context)).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -252,13 +260,13 @@ private fun fetchPayersAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 @Preview

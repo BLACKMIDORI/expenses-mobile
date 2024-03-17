@@ -17,7 +17,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.ui.AddWorkspaceScreen
 import com.blackmidori.familyexpenses.android.ui.HomeScreen
 import com.blackmidori.familyexpenses.android.ui.UpdateWorkspaceScreen
@@ -36,7 +35,19 @@ import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeas
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeassociation.ChargeAssociationScreen
 import com.blackmidori.familyexpenses.android.ui.workspace.chargesmodel.chargeassociation.UpdatePayerPaymentWeightScreen
 import com.blackmidori.familyexpenses.models.Workspace
+import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
+import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
+import com.blackmidori.familyexpenses.repositories.ExpenseRepository
+import com.blackmidori.familyexpenses.repositories.PayerPaymentWeightRepository
+import com.blackmidori.familyexpenses.repositories.PayerRepository
 import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.stores.chargeAssociationStore
+import com.blackmidori.familyexpenses.stores.chargesModelStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerPaymentWeightStore
+import com.blackmidori.familyexpenses.stores.payerStore
+import com.blackmidori.familyexpenses.stores.workspaceStore
+import com.blackmidori.familyexpenses.utils.SampleGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -247,7 +258,8 @@ fun App(navController: NavHostController = rememberNavController()) {
 
 
             composable(route = AppScreen.AddPayerPaymentWeight.route) { navBackStackEntry ->
-                val chargeAssociationId = navBackStackEntry.arguments?.getString("chargeAssociationId")
+                val chargeAssociationId =
+                    navBackStackEntry.arguments?.getString("chargeAssociationId")
                 val workspaceId = navBackStackEntry.arguments?.getString("workspaceId")
                 AddPayerPaymentWeightScreen(
                     navController = navController,
@@ -266,11 +278,11 @@ fun App(navController: NavHostController = rememberNavController()) {
             }
             composable(route = AppScreen.Calculation.route) { navBackStackEntry ->
                 val chargesModelId = navBackStackEntry.arguments?.getString("chargesModelId")
-                val workspaceId = navBackStackEntry.arguments?.getString("workspaceId")
+//                val workspaceId = navBackStackEntry.arguments?.getString("workspaceId")
                 CalculationScreen(
                     navController = navController,
                     chargesModelId = chargesModelId!!,
-                    workspaceId = workspaceId!!,
+//                    workspaceId = workspaceId!!,
                 )
             }
         }
@@ -281,20 +293,38 @@ private fun fetchWorkspacesAsync(
     coroutineScope: CoroutineScope, context: Context, onSuccess: (Array<Workspace>) -> Unit
 ) {
     val TAG = "fetchWorkspacesAsync"
-    Thread {
-        val workspacesResult = WorkspaceRepository(httpClient = HttpClientJavaImpl()).getPagedList()
+    coroutineScope.launch {
+        val workspaceRepository = WorkspaceRepository(workspaceStore(context))
+        val workspacesResult = workspaceRepository.getPagedList().let {
+            if (it.isSuccess && it.getOrThrow().results.isEmpty()) {
+                val chargesModelRepository = ChargesModelRepository(chargesModelStore(context))
+                val payerStore = payerStore(context);
+                val expenseRepository = PayerRepository(payerStore)
+                val expenseStore = expenseStore(context)
+                val payerRepository =ExpenseRepository(expenseStore)
+                val chargeAssociationRepository = ChargeAssociationRepository(chargeAssociationStore(context),expenseStore,payerStore)
+                val payerPaymentWeightRepository = PayerPaymentWeightRepository(payerPaymentWeightStore(context),payerStore)
+                SampleGenerator(
+                    workspaceRepository,
+                    chargesModelRepository,
+                    expenseRepository,
+                    payerRepository,
+                    chargeAssociationRepository,
+                    payerPaymentWeightRepository,
+                ).generateSample()
+                return@let workspaceRepository.getPagedList();
+            }
+            return@let it
+        }
+
         if (workspacesResult.isFailure) {
             Log.w(TAG, "Error: " + workspacesResult.exceptionOrNull())
-            coroutineScope.launch {
-                Toast.makeText(
-                    context, "Error: ${workspacesResult.exceptionOrNull()}", Toast.LENGTH_SHORT
-                ).show()
-            }
-            return@Thread;
+            Toast.makeText(
+                context, "Error: ${workspacesResult.exceptionOrNull()}", Toast.LENGTH_SHORT
+            ).show()
+            return@launch;
         }
-        coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
-        }
+        Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         onSuccess(workspacesResult.getOrNull()!!.results)
-    }.start()
+    }
 }

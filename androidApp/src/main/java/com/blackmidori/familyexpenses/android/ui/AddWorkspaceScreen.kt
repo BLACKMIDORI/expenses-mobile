@@ -19,11 +19,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.stores.workspaceStore
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -49,32 +49,28 @@ fun AddWorkspaceScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch{
                     val workspace = Workspace("", Instant.DISTANT_PAST, name)
                     val workspaceResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).add(workspace)
+                        WorkspaceRepository(workspaceStore(context)).add(workspace)
                     if (workspaceResult.isFailure) {
                         Log.w("AddWorkspaceScreen", "Error: " + workspaceResult.exceptionOrNull())
 
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Error: ${workspaceResult.exceptionOrNull()}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Error: ${workspaceResult.exceptionOrNull()}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Added",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateUp()
-                            onSuccess()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Added",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigateUp()
+                        onSuccess()
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }

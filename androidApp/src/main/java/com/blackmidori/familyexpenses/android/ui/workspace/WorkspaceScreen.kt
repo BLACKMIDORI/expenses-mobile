@@ -39,7 +39,6 @@ import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
 import com.blackmidori.familyexpenses.android.R
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargesModel
@@ -50,6 +49,10 @@ import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
 import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.stores.chargesModelStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerStore
+import com.blackmidori.familyexpenses.stores.workspaceStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -300,9 +303,9 @@ private fun fetchWorkspaceAsync(
     onSuccess: (Workspace) -> Unit
 ) {
     val TAG = "WorkspaceScreen.fetchWorkspacesAsync"
-    Thread {
+    coroutineScope.launch {
         val workspaceResult =
-            WorkspaceRepository(httpClient = HttpClientJavaImpl()).getOne(workspaceId)
+            WorkspaceRepository(workspaceStore(context)).getOne(workspaceId)
         if (workspaceResult.isFailure) {
             Log.w(TAG, "Error: " + workspaceResult.exceptionOrNull())
             coroutineScope.launch {
@@ -312,14 +315,14 @@ private fun fetchWorkspaceAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(workspaceResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchPayersAsync(
@@ -329,9 +332,9 @@ private fun fetchPayersAsync(
     onSuccess: (Array<Payer>) -> Unit
 ) {
     val TAG = "WorkspaceScreen.fetchPayersAsync"
-    Thread {
+    coroutineScope.launch {
         val payersResult =
-            PayerRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            PayerRepository(payerStore(context)).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -341,13 +344,13 @@ private fun fetchPayersAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 private fun fetchExpensesAsync(
@@ -357,9 +360,9 @@ private fun fetchExpensesAsync(
     onSuccess: (Array<Expense>) -> Unit
 ) {
     val TAG = "WorkspaceScreen.fetchExpensesAsync"
-    Thread {
+    coroutineScope.launch {
         val expensesResult =
-            ExpenseRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            ExpenseRepository(expenseStore(context)).getPagedList(workspaceId)
         if (expensesResult.isFailure) {
             Log.w(TAG, "Error: " + expensesResult.exceptionOrNull())
             coroutineScope.launch {
@@ -369,13 +372,13 @@ private fun fetchExpensesAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(expensesResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 private fun fetchChargesModelsAsync(
@@ -385,9 +388,9 @@ private fun fetchChargesModelsAsync(
     onSuccess: (Array<ChargesModel>) -> Unit
 ) {
     val TAG = "WorkspaceScreen.fetchChargesModelsAsync"
-    Thread {
+    coroutineScope.launch {
         val chargesModelsResult =
-            ChargesModelRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            ChargesModelRepository(chargesModelStore(context)).getPagedList(workspaceId)
         if (chargesModelsResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelsResult.exceptionOrNull())
             coroutineScope.launch {
@@ -397,13 +400,13 @@ private fun fetchChargesModelsAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargesModelsResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 @Preview

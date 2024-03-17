@@ -24,14 +24,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
-import com.blackmidori.familyexpenses.models.ChargesModel
-import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.models.Payer
-import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -43,6 +40,9 @@ fun UpdatePayerScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    var workspaceId by remember {
+        mutableStateOf("")
+    }
     var name by remember {
         mutableStateOf("")
     }
@@ -50,6 +50,7 @@ fun UpdatePayerScreen(
     LaunchedEffect(key1 = null) {
         Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchPayerAsync(payerId, coroutineScope, context) {
+            workspaceId = it.workspaceId
             name = it.name
         }
     }
@@ -64,11 +65,11 @@ fun UpdatePayerScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "UpdatePayerScreen.update"
-                    val payer = Payer(payerId, Instant.DISTANT_PAST, name)
+                    val payer = Payer(payerId, Instant.DISTANT_PAST,workspaceId, name)
                     val payerResult =
-                        PayerRepository(httpClient = HttpClientJavaImpl()).update(payer)
+                        PayerRepository(payerStore(context)).update(payer)
                     if (payerResult.isFailure) {
                         Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
 
@@ -89,18 +90,17 @@ fun UpdatePayerScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                    Thread {
+                    coroutineScope.launch {
                         val TAG = "UpdatePayerScreen.delete"
-                        val payer = Payer(payerId, Instant.DISTANT_PAST, name)
                         val deleteResult =
-                            PayerRepository(httpClient = HttpClientJavaImpl()).delete(payer)
+                            PayerRepository(payerStore(context)).delete(payerId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -121,7 +121,7 @@ fun UpdatePayerScreen(
                                 navController.navigateUp()
                             }
                         }
-                    }.start()
+                    }
                 }) {
                 Text("Delete")
             }
@@ -136,9 +136,9 @@ private fun fetchPayerAsync(
     onSuccess: (Payer) -> Unit
 ) {
     val TAG = "UpdatePayerScreen.fetchPayerAsync"
-    Thread {
+    coroutineScope.launch {
         val payerResult =
-            PayerRepository(httpClient = HttpClientJavaImpl()).getOne(payerId)
+            PayerRepository(payerStore(context)).getOne(payerId)
         if (payerResult.isFailure) {
             Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
             coroutineScope.launch {
@@ -148,14 +148,14 @@ private fun fetchPayerAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(payerResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 @Preview

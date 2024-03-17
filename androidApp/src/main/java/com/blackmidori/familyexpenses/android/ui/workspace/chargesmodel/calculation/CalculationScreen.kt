@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -21,14 +20,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
@@ -41,6 +38,11 @@ import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
 import com.blackmidori.familyexpenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
+import com.blackmidori.familyexpenses.stores.chargeAssociationStore
+import com.blackmidori.familyexpenses.stores.chargesModelStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerPaymentWeightStore
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -49,7 +51,7 @@ import kotlinx.datetime.Instant
 fun CalculationScreen(
     navController: NavHostController,
     chargesModelId: String,
-    workspaceId: String,
+//    workspaceId: String,
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -126,10 +128,20 @@ fun CalculationScreen(
     }
 
     val getExpense = { expenseId: String ->
-        expenses.firstOrNull { it.id == expenseId } ?: Expense(expenseId,Instant.DISTANT_PAST, expenseId)
+        expenses.firstOrNull { it.id == expenseId } ?: Expense(
+            expenseId,
+            Instant.DISTANT_PAST,
+            "None",
+            expenseId
+        )
     }
     val getPayer = { payerId: String ->
-        payers.firstOrNull { it.id == payerId }?: Payer(payerId,Instant.DISTANT_PAST, payerId)
+        payers.firstOrNull { it.id == payerId } ?: Payer(
+            payerId,
+            Instant.DISTANT_PAST,
+            "None",
+            payerId
+        )
     }
     var result by remember {
         mutableStateOf("")
@@ -138,7 +150,7 @@ fun CalculationScreen(
     val onCalculateClick = {
         try {
             result = "";
-            var localResult =""
+            var localResult = ""
             val charges = mutableListOf<Charge>()
             for (input in inputs) {
                 val value = input.value.toDouble()
@@ -146,48 +158,48 @@ fun CalculationScreen(
                 val expense = getExpense(chargeAssociation.expense.id)
                 val actualPayer = getPayer(chargeAssociation.actualPayer.id)
 
-                val chargeAssociations = payerPaymentWeightsByChargeAssociation.getValue(
+                val payerPaymentWeights = payerPaymentWeightsByChargeAssociation.getValue(
                     chargeAssociation.id
                 )
-                for (payerPaymentWeight in chargeAssociations) {
+                for (payerPaymentWeight in payerPaymentWeights) {
                     val payer = getPayer(payerPaymentWeight.payer.id)
-                    if(charges.firstOrNull { it.source.id == payer.id }==null) {
+                    if (charges.firstOrNull { it.source.id == payer.id } == null) {
                         charges += Charge(payer)
                     }
-                    val charge = charges.first { it.source.id == payer.id  }
-                    if(charge.destination.keys.firstOrNull { it == actualPayer.id }==null) {
+                    val charge = charges.first { it.source.id == payer.id }
+                    if (charge.destination.keys.firstOrNull { it == actualPayer.id } == null) {
                         charge.destination[actualPayer.id] = mutableListOf()
                     }
                     val bills = charge.destination.getValue(actualPayer.id)
-                    bills.add(Bill(expense, value*payerPaymentWeight.weight))
+                    bills.add(Bill(expense, value * payerPaymentWeight.weight))
                 }
             }
-            localResult+="\n"
-            localResult+="Detailed:\n"
+            localResult += "\n"
+            localResult += "Detailed:\n"
             for (charge in charges) {
                 for (payerId in charge.destination.keys) {
                     val bills = charge.destination.getValue(payerId)
                     for (bill in bills) {
-                        if(charge.source.id == payerId){
+                        if (charge.source.id == payerId) {
                             continue;
                         }
-                        localResult+="${charge.source.name} 👉 ${getPayer(payerId).name}(${bill.expense.name}) = ${bill.amount}\n"
+                        localResult += "${charge.source.name} 👉 ${getPayer(payerId).name}(${bill.expense.name}) = ${bill.amount}\n"
                     }
                 }
             }
-            localResult+="\n"
-            localResult+="Simplified:\n"
+            localResult += "\n"
+            localResult += "Simplified:\n"
             for (charge in charges) {
                 for (payerId in charge.destination.keys) {
-                    if(charge.source.id == payerId){
+                    if (charge.source.id == payerId) {
                         continue;
                     }
                     val bills = charge.destination.getValue(payerId)
                     var sum = .0
                     for (bill in bills) {
-                        sum+=bill.amount;
+                        sum += bill.amount;
                     }
-                    localResult+="${charge.source.name} 👉 ${getPayer(payerId).name} = $sum\n"
+                    localResult += "${charge.source.name} 👉 ${getPayer(payerId).name} = $sum\n"
                 }
             }
             result = localResult
@@ -239,9 +251,9 @@ private fun fetchChargesModelAsync(
     onSuccess: (ChargesModel) -> Unit
 ) {
     val TAG = "CalculationScreen.fetchChargesModelAsync"
-    Thread {
+    coroutineScope.launch {
         val chargesModelResult =
-            ChargesModelRepository(httpClient = HttpClientJavaImpl()).getOne(chargesModelId)
+            ChargesModelRepository(chargesModelStore(context)).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
             coroutineScope.launch {
@@ -251,14 +263,14 @@ private fun fetchChargesModelAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(chargesModelResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchChargeAssociationsAsync(
@@ -268,9 +280,13 @@ private fun fetchChargeAssociationsAsync(
     onSuccess: (Array<ChargeAssociation>) -> Unit
 ) {
     val TAG = "CalculationScreen.fetchChargesModelsAsync"
-    Thread {
+    coroutineScope.launch {
         val chargeAssociationResult =
-            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getPagedList(
+            ChargeAssociationRepository(
+                chargeAssociationStore(context),
+                expenseStore(context),
+                payerStore(context)
+            ).getPagedList(
                 chargesModelId
             )
         if (chargeAssociationResult.isFailure) {
@@ -282,13 +298,13 @@ private fun fetchChargeAssociationsAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 private fun fetchPayerPaymentWeightsAsync(
@@ -298,9 +314,12 @@ private fun fetchPayerPaymentWeightsAsync(
     onSuccess: (Array<PayerPaymentWeight>) -> Unit
 ) {
     val TAG = "CalculationScreen.fetchPayerPaymentWeightsAsync"
-    Thread {
+    coroutineScope.launch {
         val payerPaymentWeightResult =
-            PayerPaymentWeightRepository(httpClient = HttpClientJavaImpl()).getPagedList(
+            PayerPaymentWeightRepository(
+                payerPaymentWeightStore(context),
+                payerStore(context)
+            ).getPagedList(
                 chargeAssociationId
             )
         if (payerPaymentWeightResult.isFailure) {
@@ -312,13 +331,13 @@ private fun fetchPayerPaymentWeightsAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payerPaymentWeightResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 
@@ -329,9 +348,9 @@ private fun fetchExpenseAsync(
     onSuccess: (Expense) -> Unit
 ) {
     val TAG = "UpdateExpenseScreen.fetchExpenseAsync"
-    Thread {
+    coroutineScope.launch {
         val expenseResult =
-            ExpenseRepository(httpClient = HttpClientJavaImpl()).getOne(expenseId)
+            ExpenseRepository(expenseStore(context)).getOne(expenseId)
         if (expenseResult.isFailure) {
             Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
             coroutineScope.launch {
@@ -341,14 +360,14 @@ private fun fetchExpenseAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(expenseResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchPayerAsync(
@@ -358,9 +377,9 @@ private fun fetchPayerAsync(
     onSuccess: (Payer) -> Unit
 ) {
     val TAG = "UpdatePayerScreen.fetchPayerAsync"
-    Thread {
+    coroutineScope.launch {
         val payerResult =
-            PayerRepository(httpClient = HttpClientJavaImpl()).getOne(payerId)
+            PayerRepository(payerStore(context)).getOne(payerId)
         if (payerResult.isFailure) {
             Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
             coroutineScope.launch {
@@ -370,20 +389,20 @@ private fun fetchPayerAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(payerResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 @Preview
 @Composable
 private fun Preview() {
     MyApplicationTheme {
-        CalculationScreen(rememberNavController(), "fake", "fake")
+        CalculationScreen(rememberNavController(), "fake")
     }
 }

@@ -1,222 +1,102 @@
 package com.blackmidori.familyexpenses.repositories
 
-import com.blackmidori.familyexpenses.Config
-import com.blackmidori.familyexpenses.core.http.HttpClient
+import com.blackmidori.familyexpenses.core.EntityList
 import com.blackmidori.familyexpenses.core.PagedList
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.models.Payer
-import com.blackmidori.familyexpenses.services.TokensService
-import kotlinx.datetime.Instant
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.boolean
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.collections.immutable.PersistentList
 
 class ChargeAssociationRepository(
-    val baseUrl: String = Config.apiBaseUrl,
-    val httpClient: HttpClient,
-    val tokensService: TokensService = TokensService(authRepository = AuthRepository(httpClient = httpClient)),
+    private val store: Store<out EntityList<ChargeAssociation>>,
+    private val expenseStore: Store<out EntityList<Expense>>,
+    private val payerStore: Store<out EntityList<Payer>>,
 ) {
-    fun add(
+    suspend fun add(
         chargesModelId: String,
-        chargeAssociation: ChargeAssociation
+        entity: ChargeAssociation
     ): Result<ChargeAssociation> {
-        val result = tokensService.getUpdatedAccessToken()
-        if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
-        val accessToken = result.getOrThrow()
-
-        val requestBody =
-            "{\"name\":\"${chargeAssociation.name}\",\"chargesModel\":{\"id\":\"${chargesModelId}\"},\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"},\"actualPayer\":{\"id\":\"${chargeAssociation.actualPayer.id}\"}}"
-        val response = httpClient.post(
-            "$baseUrl/v1/charge-associations/",
-            requestBody,
-            mapOf("Authorization" to accessToken),
-        )
-        if (response.status != 200) {
-            return Result.failure(Exception(response.body))
+        val expenseResult = expenseStore.getOne(entity.expense.id)
+        if (expenseResult.isFailure) {
+            return expenseResult.map { throw Exception() };
         }
-        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
+        val payerResult = payerStore.getOne(entity.actualPayer.id)
+        if (payerResult.isFailure) {
+            return payerResult.map { throw Exception() };
+        }
 
-        if (responseBody == null) {
-            return Result.failure(Exception("http fetch error"))
-        } else {
-            val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            return Result.success(
-                ChargeAssociation(
-                    id = responseBody["id"]!!.jsonPrimitive.content,
-                    creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
-                    name = responseBody["name"]!!.jsonPrimitive.content,
-                    Expense(
-                        expenseId,
-                        Instant.DISTANT_PAST,
-                        expenseId
-                    ),
-                    Payer(
-                        actualPayerId,
-                        Instant.DISTANT_PAST,
-                        actualPayerId
-                    )
-                )
+        return store.add { id, creationDateTime ->
+            ChargeAssociation(
+                id,
+                creationDateTime,
+                chargesModelId,
+                entity.name,
+                expenseResult.getOrThrow(),
+                payerResult.getOrThrow(),
             )
         }
     }
 
-    fun getPagedList(chargesModelId: String): Result<PagedList<ChargeAssociation>> {
-        val result = tokensService.getUpdatedAccessToken()
-        if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
-        val accessToken = result.getOrThrow()
-
-        val response = httpClient.get(
-            "$baseUrl/v1/charge-associations/?filter=chargesModel.id__$chargesModelId&size=999&from=0",
-            mapOf("Authorization" to accessToken),
-        )
-        if (response.status != 200) {
-            return Result.failure(Exception(response.body))
-        }
-        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
-
-        if (responseBody == null) {
-            return Result.failure(Exception("http fetch error"))
-        } else {
-            val list = ArrayList<ChargeAssociation>()
-            for (jsonElement in responseBody["results"]!!.jsonArray) {
-                val obj = jsonElement.jsonObject
-                val expenseId = obj["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
-                val actualPayerId = obj["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
-                list.add(
+    suspend fun getPagedList(chargesModelId: String): Result<PagedList<ChargeAssociation>> {
+        val result = store.getList();
+        return result.map { it ->
+            PagedList(
+                999,
+                0,
+                it.filter { it.chargesModelId == chargesModelId }.map {
                     ChargeAssociation(
-                        id = obj["id"]!!.jsonPrimitive.content,
-                        creationDateTime = Instant.parse(obj["creationDateTime"]!!.jsonPrimitive.content),
-                        name = obj["name"]!!.jsonPrimitive.content,
-                        Expense(
-                            expenseId,
-                            Instant.DISTANT_PAST,
-                            expenseId
-                        ),
-                        Payer(
-                            actualPayerId,
-                            Instant.DISTANT_PAST,
-                            actualPayerId
-                        )
+                        it.id,
+                        it.creationDateTime,
+                        it.chargesModelId,
+                        it.name,
+                        expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
+                        payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
                     )
-                )
-            }
-            return Result.success(
-                PagedList(
-                    responseBody["size"]!!.jsonPrimitive.int,
-                    responseBody["from"]!!.jsonPrimitive.int,
-                    list.toTypedArray()
-                )
+                }.toTypedArray()
             )
         }
     }
 
-    fun getOne(chargeAssociationId: String): Result<ChargeAssociation> {
-        val result = tokensService.getUpdatedAccessToken()
-        if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
-        val accessToken = result.getOrThrow()
-
-        val response = httpClient.get(
-            "$baseUrl/v1/charge-associations/${chargeAssociationId}",
-            mapOf("Authorization" to accessToken),
-        )
-        if (response.status != 200) {
-            return Result.failure(Exception(response.body))
+    suspend fun getOne(id: String): Result<ChargeAssociation> {
+        return store.getOne(id).map {
+            ChargeAssociation(
+                it.id,
+                it.creationDateTime,
+                it.chargesModelId,
+                it.name,
+                expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
+                payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
+            )
         }
-        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
+    }
 
-        if (responseBody == null) {
-            return Result.failure(Exception("http fetch error"))
-        } else {
-            val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            return Result.success(
+    suspend fun update(entity: ChargeAssociation): Result<ChargeAssociation> {
+        val old = getOne(entity.id).getOrNull()
+        return store.update(
+            old?.let {
                 ChargeAssociation(
-                    id = responseBody["id"]!!.jsonPrimitive.content,
-                    creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
-                    name = responseBody["name"]!!.jsonPrimitive.content,
-                    Expense(
-                        expenseId,
-                        Instant.DISTANT_PAST,
-                        expenseId
-                    ),
-                    Payer(
-                        actualPayerId,
-                        Instant.DISTANT_PAST,
-                        actualPayerId
-                    )
+                    it.id,
+                    it.creationDateTime,
+                    it.chargesModelId,
+                    entity.name,
+                    entity.expense,
+                    entity.actualPayer
                 )
+            } ?: entity
+        ).map {
+            ChargeAssociation(
+                it.id,
+                it.creationDateTime,
+                it.chargesModelId,
+                it.name,
+                expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
+                payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
             )
         }
     }
 
-    fun update(chargeAssociation: ChargeAssociation): Result<ChargeAssociation> {
-        val result = tokensService.getUpdatedAccessToken()
-        if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
-        val accessToken = result.getOrThrow()
-
-        val requestBody = "{\"name\":\"${chargeAssociation.name}\",\"expense\":{\"id\":\"${chargeAssociation.expense.id}\"},\"actualPayer\":{\"id\":\"${chargeAssociation.actualPayer.id}\"}}"
-        val response = httpClient.put(
-            "$baseUrl/v1/charge-associations/${chargeAssociation.id}",
-            requestBody,
-            mapOf("Authorization" to accessToken),
-        )
-        if (response.status != 200) {
-            return Result.failure(Exception(response.body))
-        }
-        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
-
-        if (responseBody == null) {
-            return Result.failure(Exception("http fetch error"))
-        } else {
-            val expenseId = responseBody["expense"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            val actualPayerId = responseBody["actualPayer"]!!.jsonObject["id"]!!.jsonPrimitive.content
-            return Result.success(
-                ChargeAssociation(
-                    id = responseBody["id"]!!.jsonPrimitive.content,
-                    creationDateTime = Instant.parse(responseBody["creationDateTime"]!!.jsonPrimitive.content),
-                    name = responseBody["name"]!!.jsonPrimitive.content,
-                    Expense(
-                        expenseId,
-                        Instant.DISTANT_PAST,
-                        expenseId
-                    ),
-                    Payer(
-                        actualPayerId,
-                        Instant.DISTANT_PAST,
-                        actualPayerId
-                    )
-                )
-            )
-        }
-    }
-
-    fun delete(chargeAssociation: ChargeAssociation): Result<Boolean> {
-        val result = tokensService.getUpdatedAccessToken()
-        if (result.isFailure) return Result.failure(result.exceptionOrNull()!!)
-        val accessToken = result.getOrThrow()
-
-        val response = httpClient.delete(
-            "$baseUrl/v1/charge-associations/${chargeAssociation.id}",
-            mapOf("Authorization" to accessToken),
-        )
-        if (response.status != 200) {
-            return Result.failure(Exception(response.body))
-        }
-        val responseBody = response.body?.let { Json.decodeFromString<JsonObject>(it) }
-
-        if (responseBody == null) {
-            return Result.failure(Exception("http fetch error"))
-        } else {
-            return Result.success(
-                responseBody["ok"]!!.jsonPrimitive.boolean
-            )
-        }
+    suspend fun delete(id: String): Result<Boolean> {
+        return store.delete(id)
     }
 
 }

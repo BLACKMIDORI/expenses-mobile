@@ -4,16 +4,11 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,29 +22,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
 import com.blackmidori.familyexpenses.android.R
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
-import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.models.PayerPaymentWeight
-import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
-import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.PayerPaymentWeightRepository
-import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.stores.chargeAssociationStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerPaymentWeightStore
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -68,8 +60,9 @@ fun ChargeAssociationScreen(
                 "",
                 Instant.DISTANT_PAST,
                 "",
-                Expense("", Instant.DISTANT_PAST, ""),
-                Payer("", Instant.DISTANT_PAST, "")
+                "",
+                Expense("", Instant.DISTANT_PAST, workspaceId, ""),
+                Payer("", Instant.DISTANT_PAST, workspaceId, "")
             )
         )
     }
@@ -95,9 +88,9 @@ fun ChargeAssociationScreen(
             )
         )
     }
-    val onOpenClick: (id: String) -> Unit = {
-        Toast.makeText(context, "payer payment weight id: $it", Toast.LENGTH_SHORT).show()
-    }
+//    val onOpenClick: (id: String) -> Unit = {
+//        Toast.makeText(context, "payer payment weight id: $it", Toast.LENGTH_SHORT).show()
+//    }
     val onUpdateClick: (id: String) -> Unit = {
         navController.navigate(
             AppScreen.UpdatePayerPaymentWeight.route.replace(
@@ -162,9 +155,13 @@ private fun fetchChargeAssociationAsync(
     onSuccess: (ChargeAssociation) -> Unit
 ) {
     val TAG = "ChargeAssociationScreen.fetchChargeAssociationAsync"
-    Thread {
+    coroutineScope.launch {
         val chargeAssociationResult =
-            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getOne(
+            ChargeAssociationRepository(
+                chargeAssociationStore(context),
+                expenseStore(context),
+                payerStore(context),
+            ).getOne(
                 chargeAssociationId
             )
         if (chargeAssociationResult.isFailure) {
@@ -176,14 +173,14 @@ private fun fetchChargeAssociationAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchPayerPaymentWeightsAsync(
@@ -193,9 +190,12 @@ private fun fetchPayerPaymentWeightsAsync(
     onSuccess: (Array<PayerPaymentWeight>) -> Unit
 ) {
     val TAG = "ChargeAssociationScreen.fetchPayerPaymentWeightsAsync"
-    Thread {
+    coroutineScope.launch {
         val payerPaymentWeightResult =
-            PayerPaymentWeightRepository(httpClient = HttpClientJavaImpl()).getPagedList(
+            PayerPaymentWeightRepository(
+                payerPaymentWeightStore(context),
+                payerStore(context)
+            ).getPagedList(
                 chargeAssociationId
             )
         if (payerPaymentWeightResult.isFailure) {
@@ -207,13 +207,13 @@ private fun fetchPayerPaymentWeightsAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payerPaymentWeightResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 @Preview

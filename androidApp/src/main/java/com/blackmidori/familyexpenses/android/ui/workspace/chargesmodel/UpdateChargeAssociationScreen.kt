@@ -28,7 +28,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
@@ -37,6 +36,9 @@ import com.blackmidori.familyexpenses.models.Payer
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
 import com.blackmidori.familyexpenses.repositories.PayerRepository
+import com.blackmidori.familyexpenses.stores.chargeAssociationStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -83,9 +85,10 @@ fun UpdateChargeAssociationScreen(
                 chargeAssociation = ChargeAssociation(
                     chargeAssociation?.id ?: "",
                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
+                    chargeAssociation?.chargesModelId ?: "",
                     it,
-                    chargeAssociation?.expense ?: Expense("", Instant.DISTANT_PAST, ""),
-                    chargeAssociation?.actualPayer ?: Payer("", Instant.DISTANT_PAST, ""),
+                    chargeAssociation?.expense ?: Expense("", Instant.DISTANT_PAST, "", ""),
+                    chargeAssociation?.actualPayer ?: Payer("", Instant.DISTANT_PAST, "", ""),
                 )
             })
             var expensesExpanded by remember {
@@ -118,11 +121,13 @@ fun UpdateChargeAssociationScreen(
                                 chargeAssociation = ChargeAssociation(
                                     chargeAssociation?.id ?: "",
                                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
+                                    chargeAssociation?.chargesModelId ?: "",
                                     chargeAssociation?.name ?: "",
                                     item,
                                     chargeAssociation?.actualPayer ?: Payer(
                                         "",
                                         Instant.DISTANT_PAST,
+                                        "",
                                         ""
                                     )
                                 )
@@ -163,10 +168,12 @@ fun UpdateChargeAssociationScreen(
                                 chargeAssociation = ChargeAssociation(
                                     chargeAssociation?.id ?: "",
                                     chargeAssociation?.creationDateTime ?: Instant.DISTANT_PAST,
+                                    chargeAssociation?.chargesModelId ?: "",
                                     chargeAssociation?.name ?: "",
                                     chargeAssociation?.expense ?: Expense(
                                         "",
                                         Instant.DISTANT_PAST,
+                                        "",
                                         ""
                                     ),
                                     item,
@@ -178,11 +185,15 @@ fun UpdateChargeAssociationScreen(
                 }
             }
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "UpdateChargeAssociationScreen.update"
-                    val localChargeAssociation = chargeAssociation ?: return@Thread
+                    val localChargeAssociation = chargeAssociation ?: return@launch
                     val chargeAssociationResult =
-                        ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).update(
+                        ChargeAssociationRepository(
+                            chargeAssociationStore(context),
+                            expenseStore(context),
+                            payerStore(context),
+                        ).update(
                             localChargeAssociation
                         )
                     if (chargeAssociationResult.isFailure) {
@@ -205,19 +216,23 @@ fun UpdateChargeAssociationScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                    Thread {
+                    coroutineScope.launch {
                         val TAG = "UpdateExpenseScreen.delete"
-                        val localChargeAssociation = chargeAssociation ?: return@Thread
+                        val localChargeAssociation = chargeAssociation ?: return@launch
                         val deleteResult =
-                            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).delete(
-                                localChargeAssociation
+                            ChargeAssociationRepository(
+                                chargeAssociationStore(context),
+                                expenseStore(context),
+                                payerStore(context),
+                            ).delete(
+                                localChargeAssociation.id
                             )
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
@@ -239,7 +254,7 @@ fun UpdateChargeAssociationScreen(
                                 navController.navigateUp()
                             }
                         }
-                    }.start()
+                    }
                 }) {
                 Text("Delete")
             }
@@ -254,9 +269,13 @@ private fun fetchChargeAssociationAsync(
     onSuccess: (ChargeAssociation) -> Unit
 ) {
     val TAG = "UpdateChargeAssociationScreen.fetchChargeAssociationAsync"
-    Thread {
+    coroutineScope.launch {
         val chargeAssociationResult =
-            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getOne(
+            ChargeAssociationRepository(
+                chargeAssociationStore(context),
+                expenseStore(context),
+                payerStore(context),
+            ).getOne(
                 chargeAssociationId
             )
         if (chargeAssociationResult.isFailure) {
@@ -268,14 +287,14 @@ private fun fetchChargeAssociationAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchExpensesAsync(
@@ -285,9 +304,9 @@ private fun fetchExpensesAsync(
     onSuccess: (Array<Expense>) -> Unit
 ) {
     val TAG = "WorkspaceScreen.fetchExpensesAsync"
-    Thread {
+    coroutineScope.launch {
         val expensesResult =
-            ExpenseRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            ExpenseRepository(expenseStore(context)).getPagedList(workspaceId)
         if (expensesResult.isFailure) {
             Log.w(TAG, "Error: " + expensesResult.exceptionOrNull())
             coroutineScope.launch {
@@ -297,13 +316,13 @@ private fun fetchExpensesAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(expensesResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 private fun fetchPayersAsync(
@@ -313,9 +332,9 @@ private fun fetchPayersAsync(
     onSuccess: (Array<Payer>) -> Unit
 ) {
     val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
-    Thread {
+    coroutineScope.launch {
         val payersResult =
-            PayerRepository(httpClient = HttpClientJavaImpl()).getPagedList(workspaceId)
+            PayerRepository(payerStore(context)).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -325,13 +344,13 @@ private fun fetchPayersAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 @Preview

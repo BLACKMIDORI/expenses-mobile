@@ -23,11 +23,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.Workspace
 import com.blackmidori.familyexpenses.repositories.WorkspaceRepository
+import com.blackmidori.familyexpenses.stores.workspaceStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -61,67 +61,58 @@ fun UpdateWorkspaceScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val workspace = Workspace(workspaceId, Instant.DISTANT_PAST, name)
                     val workspaceResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).update(workspace)
+                        WorkspaceRepository(workspaceStore(context)).update(workspace)
                     if (workspaceResult.isFailure) {
                         Log.w(
                             "UpdateWorkspaceScreen",
                             "Error: " + workspaceResult.exceptionOrNull()
                         )
 
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Error: ${workspaceResult.exceptionOrNull()}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Error: ${workspaceResult.exceptionOrNull()}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Updated",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateUp()
-                            onSuccess()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Updated",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigateUp()
+                        onSuccess()
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                Thread {
-                    val workspace = Workspace(workspaceId, Instant.DISTANT_PAST, name)
+                    coroutineScope.launch  {
                     val deleteResult =
-                        WorkspaceRepository(httpClient = HttpClientJavaImpl()).delete(workspace)
+                        WorkspaceRepository(workspaceStore(context)).delete(workspaceId)
                     if (deleteResult.isFailure) {
                         Log.w("DeleteWorkspaceScreen", "Error: " + deleteResult.exceptionOrNull())
 
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Error: ${deleteResult.exceptionOrNull()}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Error: ${deleteResult.exceptionOrNull()}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Deleted",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateUp()
-                            onSuccess()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Deleted",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigateUp()
+                        onSuccess()
                     }
-                }.start()
+                }
             }) {
                 Text("Delete")
             }
@@ -136,26 +127,22 @@ private fun fetchWorkspaceAsync(
     onSuccess: (Workspace) -> Unit
 ) {
     val TAG = "fetchWorkspacesAsync"
-    Thread {
+    coroutineScope.launch{
         val workspaceResult =
-            WorkspaceRepository(httpClient = HttpClientJavaImpl()).getOne(workspaceId)
+            WorkspaceRepository(workspaceStore(context)).getOne(workspaceId)
         if (workspaceResult.isFailure) {
             Log.w(TAG, "Error: " + workspaceResult.exceptionOrNull())
-            coroutineScope.launch {
-                Toast.makeText(
-                    context,
-                    "Error: ${workspaceResult.exceptionOrNull()}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            return@Thread;
+            Toast.makeText(
+                context,
+                "Error: ${workspaceResult.exceptionOrNull()}",
+                Toast.LENGTH_SHORT
+            ).show()
+            return@launch;
         }
-        coroutineScope.launch {
-            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
-                .show()
-        }
+        Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
+            .show()
         onSuccess(workspaceResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 @Preview

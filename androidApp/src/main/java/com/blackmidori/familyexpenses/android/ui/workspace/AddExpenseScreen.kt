@@ -19,13 +19,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
-import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.models.Expense
-import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
+import com.blackmidori.familyexpenses.stores.expenseStore
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -51,11 +49,11 @@ fun AddExpenseScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "AddExpenseScreen.submit"
-                    val expense = Expense("", Instant.DISTANT_PAST, name)
+                    val expense = Expense("", Instant.DISTANT_PAST, workspaceId,name)
                     val expenseResult =
-                        ExpenseRepository(httpClient = HttpClientJavaImpl()).add(workspaceId, expense)
+                        ExpenseRepository(expenseStore(context)).add(workspaceId, expense)
                     if (expenseResult.isFailure) {
                         Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
 
@@ -76,7 +74,7 @@ fun AddExpenseScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }

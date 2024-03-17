@@ -19,11 +19,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
+import com.blackmidori.familyexpenses.stores.chargesModelStore
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -49,32 +49,28 @@ fun AddChargesModelScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "AddChargesModel.submit"
-                    val chargesModel = ChargesModel("", Instant.DISTANT_PAST, name)
+                    val chargesModel = ChargesModel("", Instant.DISTANT_PAST, workspaceId, name)
                     val chargesModelResult =
-                        ChargesModelRepository(httpClient = HttpClientJavaImpl()).add(workspaceId, chargesModel)
+                        ChargesModelRepository(chargesModelStore(context)).add(workspaceId, chargesModel)
                     if (chargesModelResult.isFailure) {
                         Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
 
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Error: ${chargesModelResult.exceptionOrNull()}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Error: ${chargesModelResult.exceptionOrNull()}",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        coroutineScope.launch {
-                            Toast.makeText(
-                                context,
-                                "Added",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            navController.navigateUp()
-                        }
+                        Toast.makeText(
+                            context,
+                            "Added",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        navController.navigateUp()
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }

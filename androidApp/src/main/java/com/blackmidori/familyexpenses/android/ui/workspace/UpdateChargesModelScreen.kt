@@ -23,11 +23,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
+import com.blackmidori.familyexpenses.stores.chargesModelStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -60,11 +60,11 @@ fun UpdateChargesModelScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "UpdateChargesModel.update"
-                    val chargeModel = ChargesModel(chargesModelId, Instant.DISTANT_PAST, name)
+                    val chargeModel = ChargesModel(chargesModelId, Instant.DISTANT_PAST, chargesModelId, name)
                     val chargeModelResult =
-                        ChargesModelRepository(httpClient = HttpClientJavaImpl()).update(chargeModel)
+                        ChargesModelRepository(chargesModelStore(context)).update(chargeModel)
                     if (chargeModelResult.isFailure) {
                         Log.w(TAG, "Error: " + chargeModelResult.exceptionOrNull())
 
@@ -85,20 +85,17 @@ fun UpdateChargesModelScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                    Thread {
+                    coroutineScope.launch {
                         val TAG = "UpdateChargesModel.delete"
-                        val chargesModel = ChargesModel(chargesModelId, Instant.DISTANT_PAST, name)
                         val deleteResult =
-                            ChargesModelRepository(httpClient = HttpClientJavaImpl()).delete(
-                                chargesModel
-                            )
+                            ChargesModelRepository(chargesModelStore(context)).delete(chargesModelId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -119,7 +116,7 @@ fun UpdateChargesModelScreen(
                                 navController.navigateUp()
                             }
                         }
-                    }.start()
+                    }
                 }) {
                 Text("Delete")
             }
@@ -134,9 +131,9 @@ private fun fetchChargesModelAsync(
     onSuccess: (ChargesModel) -> Unit
 ) {
     val TAG = "UpdateChargesModelScreen.fetchChargesModelAsync"
-    Thread {
+    coroutineScope.launch {
         val chargesModelResult =
-            ChargesModelRepository(httpClient = HttpClientJavaImpl()).getOne(chargesModelId)
+            ChargesModelRepository(chargesModelStore(context)).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
             coroutineScope.launch {
@@ -146,14 +143,14 @@ private fun fetchChargesModelAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(chargesModelResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 @Preview

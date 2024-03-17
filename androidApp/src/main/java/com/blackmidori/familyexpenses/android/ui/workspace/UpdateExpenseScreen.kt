@@ -23,13 +23,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.models.Expense
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
 import com.blackmidori.familyexpenses.repositories.ExpenseRepository
+import com.blackmidori.familyexpenses.stores.expenseStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -41,6 +41,9 @@ fun UpdateExpenseScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    var workspaceId by remember {
+        mutableStateOf("")
+    }
     var name by remember {
         mutableStateOf("")
     }
@@ -48,6 +51,7 @@ fun UpdateExpenseScreen(
     LaunchedEffect(key1 = null) {
         Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchExpenseAsync(expenseId, coroutineScope, context) {
+            workspaceId = it.workspaceId
             name = it.name
         }
     }
@@ -62,11 +66,11 @@ fun UpdateExpenseScreen(
                 name = it
             })
             Button(onClick = {
-                Thread {
+                coroutineScope.launch {
                     val TAG = "UpdateExpenseScreen.update"
-                    val expense = Expense(expenseId, Instant.DISTANT_PAST, name)
+                    val expense = Expense(expenseId, Instant.DISTANT_PAST,workspaceId, name)
                     val expenseResult =
-                        ExpenseRepository(httpClient = HttpClientJavaImpl()).update(expense)
+                        ExpenseRepository(expenseStore(context)).update(expense)
                     if (expenseResult.isFailure) {
                         Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
 
@@ -87,18 +91,17 @@ fun UpdateExpenseScreen(
                             navController.navigateUp()
                         }
                     }
-                }.start()
+                }
             }) {
                 Text("Submit")
             }
             Button(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF3737)),
                 onClick = {
-                    Thread {
+                    coroutineScope.launch {
                         val TAG = "UpdateExpenseScreen.delete"
-                        val expense = Expense(expenseId, Instant.DISTANT_PAST, name)
                         val deleteResult =
-                            ExpenseRepository(httpClient = HttpClientJavaImpl()).delete(expense)
+                            ExpenseRepository(expenseStore(context)).delete(expenseId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -119,7 +122,7 @@ fun UpdateExpenseScreen(
                                 navController.navigateUp()
                             }
                         }
-                    }.start()
+                    }
                 }) {
                 Text("Delete")
             }
@@ -134,9 +137,9 @@ private fun fetchExpenseAsync(
     onSuccess: (Expense) -> Unit
 ) {
     val TAG = "UpdateExpenseScreen.fetchExpenseAsync"
-    Thread {
+    coroutineScope.launch {
         val expenseResult =
-            ExpenseRepository(httpClient = HttpClientJavaImpl()).getOne(expenseId)
+            ExpenseRepository(expenseStore(context)).getOne(expenseId)
         if (expenseResult.isFailure) {
             Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
             coroutineScope.launch {
@@ -146,14 +149,14 @@ private fun fetchExpenseAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(expenseResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 @Preview

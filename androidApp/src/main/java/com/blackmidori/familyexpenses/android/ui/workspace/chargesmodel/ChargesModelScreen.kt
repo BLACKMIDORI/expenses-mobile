@@ -5,8 +5,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -19,7 +17,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -39,17 +36,19 @@ import androidx.navigation.compose.rememberNavController
 import com.blackmidori.familyexpenses.android.AppScreen
 import com.blackmidori.familyexpenses.android.MyApplicationTheme
 import com.blackmidori.familyexpenses.android.R
-import com.blackmidori.familyexpenses.android.core.HttpClientJavaImpl
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.familyexpenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.familyexpenses.models.ChargeAssociation
 import com.blackmidori.familyexpenses.models.ChargesModel
 import com.blackmidori.familyexpenses.repositories.ChargeAssociationRepository
 import com.blackmidori.familyexpenses.repositories.ChargesModelRepository
+import com.blackmidori.familyexpenses.stores.chargeAssociationStore
+import com.blackmidori.familyexpenses.stores.chargesModelStore
+import com.blackmidori.familyexpenses.stores.expenseStore
+import com.blackmidori.familyexpenses.stores.payerStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChargesModelScreen(
     navController: NavHostController,
@@ -102,7 +101,7 @@ fun ChargesModelScreen(
         )
     }
 
-    val onCalculateClick={
+    val onCalculateClick = {
         navController.navigate(
             AppScreen.Calculation.route.replace(
                 "{chargesModelId}", chargesModelId
@@ -177,9 +176,11 @@ private fun fetchChargesModelAsync(
     onSuccess: (ChargesModel) -> Unit
 ) {
     val TAG = "ChargesModelScreen.fetchChargesModelAsync"
-    Thread {
+    coroutineScope.launch {
         val chargesModelResult =
-            ChargesModelRepository(httpClient = HttpClientJavaImpl()).getOne(chargesModelId)
+            ChargesModelRepository(
+                chargesModelStore(context),
+            ).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
             coroutineScope.launch {
@@ -189,14 +190,14 @@ private fun fetchChargesModelAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
                 .show()
         }
         onSuccess(chargesModelResult.getOrNull()!!)
-    }.start()
+    }
 }
 
 private fun fetchChargeAssociationsAsync(
@@ -206,9 +207,13 @@ private fun fetchChargeAssociationsAsync(
     onSuccess: (Array<ChargeAssociation>) -> Unit
 ) {
     val TAG = "ChargesModelScreen.fetchChargesModelsAsync"
-    Thread {
+    coroutineScope.launch {
         val chargeAssociationResult =
-            ChargeAssociationRepository(httpClient = HttpClientJavaImpl()).getPagedList(
+            ChargeAssociationRepository(
+                chargeAssociationStore(context),
+                expenseStore(context),
+                payerStore(context),
+            ).getPagedList(
                 chargesModelId
             )
         if (chargeAssociationResult.isFailure) {
@@ -220,19 +225,19 @@ private fun fetchChargeAssociationsAsync(
                     Toast.LENGTH_SHORT
                 ).show()
             }
-            return@Thread;
+            return@launch;
         }
         coroutineScope.launch {
             Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!.results)
-    }.start()
+    }
 }
 
 @Preview
 @Composable
 private fun Preview() {
     MyApplicationTheme {
-        ChargesModelScreen(rememberNavController(), "fake","")
+        ChargesModelScreen(rememberNavController(), "fake", "")
     }
 }
