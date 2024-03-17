@@ -41,7 +41,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.blackmidori.familyexpenses"
+    namespace = "com.blackmidori.expenses"
     compileSdk = 34
     defaultConfig {
         minSdk = 24

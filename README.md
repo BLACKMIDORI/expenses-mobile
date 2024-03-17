@@ -1,3 +1,3 @@
-# Family Expenses
+# Expenses
 
-An app to organize family expenses
+An app to organize expenses

@@ -4,10 +4,10 @@ plugins {
 }
 
 android {
-    namespace = "com.blackmidori.familyexpenses.android"
+    namespace = "com.blackmidori.expenses.android"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.blackmidori.familyexpenses"
+        applicationId = "com.blackmidori.expenses"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
