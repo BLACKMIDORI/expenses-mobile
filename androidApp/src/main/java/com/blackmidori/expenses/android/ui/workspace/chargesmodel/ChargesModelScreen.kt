@@ -41,10 +41,10 @@ import com.blackmidori.expenses.models.ChargeAssociation
 import com.blackmidori.expenses.models.ChargesModel
 import com.blackmidori.expenses.repositories.ChargeAssociationRepository
 import com.blackmidori.expenses.repositories.ChargesModelRepository
-import com.blackmidori.expenses.stores.chargeAssociationStore
-import com.blackmidori.expenses.stores.chargesModelStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.chargeAssociationStorage
+import com.blackmidori.expenses.stores.chargesModelStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -63,7 +63,7 @@ fun ChargesModelScreen(
         mutableStateOf(arrayOf<ChargeAssociation>())
     }
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchChargesModelAsync(chargesModelId, coroutineScope, context) {
             name = it.name
         }
@@ -178,7 +178,7 @@ private fun fetchChargesModelAsync(
     coroutineScope.launch {
         val chargesModelResult =
             ChargesModelRepository(
-                chargesModelStore(context),
+                chargesModelStorage(),
             ).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
@@ -209,9 +209,9 @@ private fun fetchChargeAssociationsAsync(
     coroutineScope.launch {
         val chargeAssociationResult =
             ChargeAssociationRepository(
-                chargeAssociationStore(context),
-                expenseStore(context),
-                payerStore(context),
+                chargeAssociationStorage(),
+                expenseStorage(),
+                payerStorage(),
             ).getPagedList(
                 chargesModelId
             )
@@ -227,7 +227,7 @@ private fun fetchChargeAssociationsAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!.results)
     }

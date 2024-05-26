@@ -34,9 +34,9 @@ import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.repositories.ChargeAssociationRepository
 import com.blackmidori.expenses.repositories.ExpenseRepository
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.chargeAssociationStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.chargeAssociationStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -61,7 +61,7 @@ fun AddChargeAssociationScreen(
         mutableStateOf(arrayOf<Payer>())
     }
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
 
         fetchExpensesAsync(workspaceId, coroutineScope, context) {
             expenses = it
@@ -197,9 +197,9 @@ fun AddChargeAssociationScreen(
                     val localChargeAssociation = chargeAssociation ?: return@launch
                     val chargeAssociationResult =
                         ChargeAssociationRepository(
-                            chargeAssociationStore(context),
-                            expenseStore(context),
-                            payerStore(context),
+                            chargeAssociationStorage(),
+                            expenseStorage(),
+                            payerStorage(),
                         ).add(chargesModelId, localChargeAssociation)
                     if (chargeAssociationResult.isFailure) {
                         Log.w(TAG, "Error: " + chargeAssociationResult.exceptionOrNull())
@@ -239,9 +239,9 @@ private fun fetchChargeAssociationAsync(
     coroutineScope.launch {
         val chargeAssociationResult =
             ChargeAssociationRepository(
-                chargeAssociationStore(context),
-                expenseStore(context),
-                payerStore(context),
+                chargeAssociationStorage(),
+                expenseStorage(),
+                payerStorage(),
             ).getOne(
                 chargeAssociationId
             )
@@ -273,7 +273,7 @@ private fun fetchExpensesAsync(
     val TAG = "WorkspaceScreen.fetchExpensesAsync"
     coroutineScope.launch {
         val expensesResult =
-            ExpenseRepository(expenseStore(context)).getPagedList(workspaceId)
+            ExpenseRepository(expenseStorage()).getPagedList(workspaceId)
         if (expensesResult.isFailure) {
             Log.w(TAG, "Error: " + expensesResult.exceptionOrNull())
             coroutineScope.launch {
@@ -286,7 +286,7 @@ private fun fetchExpensesAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(expensesResult.getOrNull()!!.results)
     }
@@ -301,7 +301,7 @@ private fun fetchPayersAsync(
     val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
     coroutineScope.launch {
         val payersResult =
-            PayerRepository(payerStore(context)).getPagedList(workspaceId)
+            PayerRepository(payerStorage()).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -314,7 +314,7 @@ private fun fetchPayersAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
     }

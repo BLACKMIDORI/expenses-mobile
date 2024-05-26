@@ -33,6 +33,7 @@ kotlin {
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.collections.immutable)
+            implementation(libs.couchbase.lite)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

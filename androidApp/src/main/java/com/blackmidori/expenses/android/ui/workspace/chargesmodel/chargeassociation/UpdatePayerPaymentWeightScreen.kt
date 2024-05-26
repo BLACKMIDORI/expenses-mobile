@@ -36,8 +36,8 @@ import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.models.PayerPaymentWeight
 import com.blackmidori.expenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.payerPaymentWeightStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.payerPaymentWeightStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -59,7 +59,7 @@ fun UpdatePayerPaymentWeightScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchPayerPaymentWeightAsync(payerPaymentWeightId, coroutineScope, context) {
             payerPaymentWeight = it
         }
@@ -79,7 +79,7 @@ fun UpdatePayerPaymentWeightScreen(
                 value = payerPaymentWeight?.weight?.toString() ?: "", onValueChange = {
                     var weight = payerPaymentWeight?.weight
                     try {
-                        weight = it.toDouble();
+                        weight = it.toFloat();
                     } catch (e: NumberFormatException) {
                         //Silence
                     }
@@ -87,7 +87,7 @@ fun UpdatePayerPaymentWeightScreen(
                         payerPaymentWeight?.id ?: "",
                         payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
                         payerPaymentWeight?.chargeAssociationId ?: "",
-                        weight ?: .0,
+                        weight ?: .0f,
                         payerPaymentWeight?.payer ?: Payer("", Instant.DISTANT_PAST, "",""),
                     )
                 })
@@ -122,7 +122,7 @@ fun UpdatePayerPaymentWeightScreen(
                                     payerPaymentWeight?.id ?: "",
                                     payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
                                     payerPaymentWeight?.chargeAssociationId ?: "",
-                                    payerPaymentWeight?.weight ?: .0,
+                                    payerPaymentWeight?.weight ?: .0f,
                                     item,
                                 )
                                 expanded = false
@@ -137,8 +137,8 @@ fun UpdatePayerPaymentWeightScreen(
                     val localPayerPaymentWeight = payerPaymentWeight ?: return@launch
                     val payerPaymentWeightResult =
                         PayerPaymentWeightRepository(
-                            payerPaymentWeightStore(context),
-                            payerStore(context),
+                            payerPaymentWeightStorage(),
+                            payerStorage(),
                         ).update(
                             localPayerPaymentWeight
                         )
@@ -174,8 +174,8 @@ fun UpdatePayerPaymentWeightScreen(
                         val localPayerPaymentWeight = payerPaymentWeight ?: return@launch
                         val deleteResult =
                             PayerPaymentWeightRepository(
-                                payerPaymentWeightStore(context),
-                                payerStore(context),
+                                payerPaymentWeightStorage(),
+                                payerStorage(),
                             ).delete(
                                 localPayerPaymentWeight.id
                             )
@@ -217,8 +217,8 @@ private fun fetchPayerPaymentWeightAsync(
     coroutineScope.launch {
         val payerPaymentWeightResult =
             PayerPaymentWeightRepository(
-                payerPaymentWeightStore(context),
-                payerStore(context),
+                payerPaymentWeightStorage(),
+                payerStorage(),
             ).getOne(
                 payerPaymentWeightId
             )
@@ -250,7 +250,7 @@ private fun fetchPayersAsync(
     val TAG = "UpdatePayerPaymentWeightScreen.fetchPayersAsync"
     coroutineScope.launch {
         val payersResult =
-            PayerRepository(payerStore(context)).getPagedList(workspaceId)
+            PayerRepository(payerStorage()).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -263,7 +263,7 @@ private fun fetchPayersAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
     }

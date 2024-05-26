@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -18,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,11 +40,11 @@ import com.blackmidori.expenses.repositories.ChargesModelRepository
 import com.blackmidori.expenses.repositories.ExpenseRepository
 import com.blackmidori.expenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.chargeAssociationStore
-import com.blackmidori.expenses.stores.chargesModelStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerPaymentWeightStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.chargeAssociationStorage
+import com.blackmidori.expenses.stores.chargesModelStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerPaymentWeightStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -71,7 +73,7 @@ fun CalculationScreen(
         mutableStateListOf<Expense>()
     }
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchChargesModelAsync(chargesModelId, coroutineScope, context) {
             name = it.name
         }
@@ -153,7 +155,7 @@ fun CalculationScreen(
             var localResult = ""
             val charges = mutableListOf<Charge>()
             for (input in inputs) {
-                val value = input.value.toDouble()
+                val value = input.value.toFloat()
                 val chargeAssociation = chargeAssociations.first { it.id == input.key }
                 val expense = getExpense(chargeAssociation.expense.id)
                 val actualPayer = getPayer(chargeAssociation.actualPayer.id)
@@ -175,7 +177,7 @@ fun CalculationScreen(
                 }
             }
             localResult += "\n"
-            localResult += "Detailed:\n"
+            localResult += "by Expense:\n"
             for (charge in charges) {
                 for (payerId in charge.destination.keys) {
                     val bills = charge.destination.getValue(payerId)
@@ -183,24 +185,29 @@ fun CalculationScreen(
                         if (charge.source.id == payerId) {
                             continue;
                         }
-                        localResult += "${charge.source.name} 👉 ${getPayer(payerId).name}(${bill.expense.name}) = ${bill.amount}\n"
+                        localResult += "${charge.source.name} pays ${getPayer(payerId).name}(${bill.expense.name}) = ${round3Digits(bill.amount)}\n"
                     }
                 }
             }
             localResult += "\n"
-            localResult += "Simplified:\n"
+            localResult += "by Actual Payer:\n"
             for (charge in charges) {
                 for (payerId in charge.destination.keys) {
                     if (charge.source.id == payerId) {
                         continue;
                     }
                     val bills = charge.destination.getValue(payerId)
-                    var sum = .0
+                    var sum = .0f
                     for (bill in bills) {
                         sum += bill.amount;
                     }
-                    localResult += "${charge.source.name} 👉 ${getPayer(payerId).name} = $sum\n"
+                    localResult += "${charge.source.name} pays ${getPayer(payerId).name} = ${round3Digits(sum)}\n"
                 }
+            }
+            localResult += "\n"
+            localResult += "Simplified:\n"
+            for (charge in chargesSimplified(charges)) {
+                localResult += "${getPayer(charge.source).name} pays ${getPayer(charge.destination).name} = ${round3Digits(charge.amount)}\n"
             }
             result = localResult
         } catch (e: NumberFormatException) {
@@ -215,7 +222,7 @@ fun CalculationScreen(
                 title = { Text(stringResource(AppScreen.Calculation.title) + " - $name") })
         }
     ) {
-        LazyColumn() {
+        LazyColumn(Modifier.fillMaxWidth()) {
             item {
                 Button(onCalculateClick) {
                     Text("Calculate")
@@ -253,7 +260,7 @@ private fun fetchChargesModelAsync(
     val TAG = "CalculationScreen.fetchChargesModelAsync"
     coroutineScope.launch {
         val chargesModelResult =
-            ChargesModelRepository(chargesModelStore(context)).getOne(chargesModelId)
+            ChargesModelRepository(chargesModelStorage()).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
             coroutineScope.launch {
@@ -266,8 +273,8 @@ private fun fetchChargesModelAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
-                .show()
+//            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
+//                .show()
         }
         onSuccess(chargesModelResult.getOrNull()!!)
     }
@@ -283,9 +290,9 @@ private fun fetchChargeAssociationsAsync(
     coroutineScope.launch {
         val chargeAssociationResult =
             ChargeAssociationRepository(
-                chargeAssociationStore(context),
-                expenseStore(context),
-                payerStore(context)
+                chargeAssociationStorage(),
+                expenseStorage(),
+                payerStorage()
             ).getPagedList(
                 chargesModelId
             )
@@ -301,7 +308,7 @@ private fun fetchChargeAssociationsAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargeAssociationResult.getOrNull()!!.results)
     }
@@ -317,8 +324,8 @@ private fun fetchPayerPaymentWeightsAsync(
     coroutineScope.launch {
         val payerPaymentWeightResult =
             PayerPaymentWeightRepository(
-                payerPaymentWeightStore(context),
-                payerStore(context)
+                payerPaymentWeightStorage(),
+                payerStorage()
             ).getPagedList(
                 chargeAssociationId
             )
@@ -334,7 +341,7 @@ private fun fetchPayerPaymentWeightsAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payerPaymentWeightResult.getOrNull()!!.results)
     }
@@ -350,7 +357,7 @@ private fun fetchExpenseAsync(
     val TAG = "UpdateExpenseScreen.fetchExpenseAsync"
     coroutineScope.launch {
         val expenseResult =
-            ExpenseRepository(expenseStore(context)).getOne(expenseId)
+            ExpenseRepository(expenseStorage()).getOne(expenseId)
         if (expenseResult.isFailure) {
             Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
             coroutineScope.launch {
@@ -363,8 +370,8 @@ private fun fetchExpenseAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
-                .show()
+//            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
+//                .show()
         }
         onSuccess(expenseResult.getOrNull()!!)
     }
@@ -379,7 +386,7 @@ private fun fetchPayerAsync(
     val TAG = "UpdatePayerScreen.fetchPayerAsync"
     coroutineScope.launch {
         val payerResult =
-            PayerRepository(payerStore(context)).getOne(payerId)
+            PayerRepository(payerStorage()).getOne(payerId)
         if (payerResult.isFailure) {
             Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
             coroutineScope.launch {
@@ -392,11 +399,49 @@ private fun fetchPayerAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
-                .show()
+//            Toast.makeText(context, "Loaded", Toast.LENGTH_SHORT)
+//                .show()
         }
         onSuccess(payerResult.getOrNull()!!)
     }
+}
+
+private fun round3Digits(number: Float): String{
+    return String.format("%.3f", number)
+}
+
+private fun chargesSimplified(charges: List<Charge>): List<ChargeSimplified>{
+    val pairsAmount = mutableMapOf<Pair<String,String>,Float>()
+    for (charge in charges) {
+        val source = charge.source.id;
+        for (entry in charge.destination) {
+            val key = Pair(source,entry.key)
+            val key2 = Pair(source,entry.key)
+            if (key != key2){
+                throw Exception("uai")
+            }
+            if (!pairsAmount.containsKey(key)){
+                pairsAmount.put(key, 0f)
+            }
+            for (bills in entry.value) {
+                pairsAmount[key] = pairsAmount[key]!! + bills.amount;
+            }
+
+        }
+    }
+    val onlyDifference = mutableListOf<ChargeSimplified>()
+    for (entry in pairsAmount) {
+        val invertedKey = Pair(entry.key.second, entry.key.first);
+        if(!pairsAmount.containsKey(invertedKey)){
+            onlyDifference.add(ChargeSimplified(entry.key.first, entry.key.second, entry.value))
+        }else{
+            val difference = entry.value - pairsAmount[invertedKey]!!
+            if(difference>0){
+                onlyDifference.add(ChargeSimplified(entry.key.first, entry.key.second, difference))
+            }
+        }
+    }
+    return onlyDifference
 }
 
 @Preview

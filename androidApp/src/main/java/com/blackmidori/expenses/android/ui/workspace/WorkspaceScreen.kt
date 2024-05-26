@@ -47,10 +47,10 @@ import com.blackmidori.expenses.repositories.ChargesModelRepository
 import com.blackmidori.expenses.repositories.ExpenseRepository
 import com.blackmidori.expenses.repositories.PayerRepository
 import com.blackmidori.expenses.repositories.WorkspaceRepository
-import com.blackmidori.expenses.stores.chargesModelStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerStore
-import com.blackmidori.expenses.stores.workspaceStore
+import com.blackmidori.expenses.stores.chargesModelStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerStorage
+import com.blackmidori.expenses.stores.workspaceStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -75,7 +75,7 @@ fun WorkspaceScreen(
         mutableStateOf(arrayOf<ChargesModel>())
     }
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchWorkspaceAsync(workspaceId, coroutineScope, context) {
             name = it.name
         }
@@ -303,7 +303,7 @@ private fun fetchWorkspaceAsync(
     val TAG = "WorkspaceScreen.fetchWorkspacesAsync"
     coroutineScope.launch {
         val workspaceResult =
-            WorkspaceRepository(workspaceStore(context)).getOne(workspaceId)
+            WorkspaceRepository(workspaceStorage()).getOne(workspaceId)
         if (workspaceResult.isFailure) {
             Log.w(TAG, "Error: " + workspaceResult.exceptionOrNull())
             coroutineScope.launch {
@@ -332,7 +332,7 @@ private fun fetchPayersAsync(
     val TAG = "WorkspaceScreen.fetchPayersAsync"
     coroutineScope.launch {
         val payersResult =
-            PayerRepository(payerStore(context)).getPagedList(workspaceId)
+            PayerRepository(payerStorage()).getPagedList(workspaceId)
         if (payersResult.isFailure) {
             Log.w(TAG, "Error: " + payersResult.exceptionOrNull())
             coroutineScope.launch {
@@ -345,7 +345,7 @@ private fun fetchPayersAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payersResult.getOrNull()!!.results)
     }
@@ -360,7 +360,7 @@ private fun fetchExpensesAsync(
     val TAG = "WorkspaceScreen.fetchExpensesAsync"
     coroutineScope.launch {
         val expensesResult =
-            ExpenseRepository(expenseStore(context)).getPagedList(workspaceId)
+            ExpenseRepository(expenseStorage()).getPagedList(workspaceId)
         if (expensesResult.isFailure) {
             Log.w(TAG, "Error: " + expensesResult.exceptionOrNull())
             coroutineScope.launch {
@@ -373,7 +373,7 @@ private fun fetchExpensesAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(expensesResult.getOrNull()!!.results)
     }
@@ -388,7 +388,7 @@ private fun fetchChargesModelsAsync(
     val TAG = "WorkspaceScreen.fetchChargesModelsAsync"
     coroutineScope.launch {
         val chargesModelsResult =
-            ChargesModelRepository(chargesModelStore(context)).getPagedList(workspaceId)
+            ChargesModelRepository(chargesModelStorage()).getPagedList(workspaceId)
         if (chargesModelsResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelsResult.exceptionOrNull())
             coroutineScope.launch {
@@ -401,7 +401,7 @@ private fun fetchChargesModelsAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(chargesModelsResult.getOrNull()!!.results)
     }

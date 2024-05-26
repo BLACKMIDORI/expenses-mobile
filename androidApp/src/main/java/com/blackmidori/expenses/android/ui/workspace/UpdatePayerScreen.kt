@@ -27,7 +27,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -47,7 +47,7 @@ fun UpdatePayerScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchPayerAsync(payerId, coroutineScope, context) {
             workspaceId = it.workspaceId
             name = it.name
@@ -68,7 +68,7 @@ fun UpdatePayerScreen(
                     val TAG = "UpdatePayerScreen.update"
                     val payer = Payer(payerId, Instant.DISTANT_PAST,workspaceId, name)
                     val payerResult =
-                        PayerRepository(payerStore(context)).update(payer)
+                        PayerRepository(payerStorage()).update(payer)
                     if (payerResult.isFailure) {
                         Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
 
@@ -99,7 +99,7 @@ fun UpdatePayerScreen(
                     coroutineScope.launch {
                         val TAG = "UpdatePayerScreen.delete"
                         val deleteResult =
-                            PayerRepository(payerStore(context)).delete(payerId)
+                            PayerRepository(payerStorage()).delete(payerId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -137,7 +137,7 @@ private fun fetchPayerAsync(
     val TAG = "UpdatePayerScreen.fetchPayerAsync"
     coroutineScope.launch {
         val payerResult =
-            PayerRepository(payerStore(context)).getOne(payerId)
+            PayerRepository(payerStorage()).getOne(payerId)
         if (payerResult.isFailure) {
             Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
             coroutineScope.launch {

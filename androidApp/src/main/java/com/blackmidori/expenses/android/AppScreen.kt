@@ -34,6 +34,11 @@ import com.blackmidori.expenses.android.ui.workspace.chargesmodel.calculation.Ca
 import com.blackmidori.expenses.android.ui.workspace.chargesmodel.chargeassociation.AddPayerPaymentWeightScreen
 import com.blackmidori.expenses.android.ui.workspace.chargesmodel.chargeassociation.ChargeAssociationScreen
 import com.blackmidori.expenses.android.ui.workspace.chargesmodel.chargeassociation.UpdatePayerPaymentWeightScreen
+import com.blackmidori.expenses.models.ChargeAssociation
+import com.blackmidori.expenses.models.ChargesModel
+import com.blackmidori.expenses.models.Expense
+import com.blackmidori.expenses.models.Payer
+import com.blackmidori.expenses.models.PayerPaymentWeight
 import com.blackmidori.expenses.models.Workspace
 import com.blackmidori.expenses.repositories.ChargeAssociationRepository
 import com.blackmidori.expenses.repositories.ChargesModelRepository
@@ -41,15 +46,16 @@ import com.blackmidori.expenses.repositories.ExpenseRepository
 import com.blackmidori.expenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.expenses.repositories.PayerRepository
 import com.blackmidori.expenses.repositories.WorkspaceRepository
-import com.blackmidori.expenses.stores.chargeAssociationStore
-import com.blackmidori.expenses.stores.chargesModelStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerPaymentWeightStore
-import com.blackmidori.expenses.stores.payerStore
-import com.blackmidori.expenses.stores.workspaceStore
+import com.blackmidori.expenses.stores.chargeAssociationStorage
+import com.blackmidori.expenses.stores.chargesModelStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerPaymentWeightStorage
+import com.blackmidori.expenses.stores.payerStorage
+import com.blackmidori.expenses.stores.workspaceStorage
 import com.blackmidori.expenses.utils.SampleGenerator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
 
 /**
  * enum values that represent the screens in the app
@@ -124,9 +130,15 @@ fun App(navController: NavHostController = rememberNavController()) {
         mutableStateOf(arrayOf<Workspace>())
     }
     LaunchedEffect(key1 = updateList) {
-        Toast.makeText(context, "Refreshing...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Refreshing...", Toast.LENGTH_SHORT).show()
         fetchWorkspacesAsync(coroutineScope, context) {
             list = it
+            if (it.isEmpty()) {
+                seedTemplateData()
+                fetchWorkspacesAsync(coroutineScope, context) {
+                    list = it
+                }
+            }
         }
     }
     MyApplicationTheme {
@@ -290,20 +302,22 @@ fun App(navController: NavHostController = rememberNavController()) {
 }
 
 private fun fetchWorkspacesAsync(
-    coroutineScope: CoroutineScope, context: Context, onSuccess: (Array<Workspace>) -> Unit
+    coroutineScope: CoroutineScope, context: Context, onSuccess: suspend (Array<Workspace>) -> Unit
 ) {
     val TAG = "fetchWorkspacesAsync"
     coroutineScope.launch {
-        val workspaceRepository = WorkspaceRepository(workspaceStore(context))
+        val workspaceRepository = WorkspaceRepository(workspaceStorage())
         val workspacesResult = workspaceRepository.getPagedList().let {
             if (it.isSuccess && it.getOrThrow().results.isEmpty()) {
-                val chargesModelRepository = ChargesModelRepository(chargesModelStore(context))
-                val payerStore = payerStore(context);
+                val chargesModelRepository = ChargesModelRepository(chargesModelStorage())
+                val payerStore = payerStorage();
                 val expenseRepository = PayerRepository(payerStore)
-                val expenseStore = expenseStore(context)
-                val payerRepository =ExpenseRepository(expenseStore)
-                val chargeAssociationRepository = ChargeAssociationRepository(chargeAssociationStore(context),expenseStore,payerStore)
-                val payerPaymentWeightRepository = PayerPaymentWeightRepository(payerPaymentWeightStore(context),payerStore)
+                val expenseStore = expenseStorage()
+                val payerRepository = ExpenseRepository(expenseStore)
+                val chargeAssociationRepository =
+                    ChargeAssociationRepository(chargeAssociationStorage(), expenseStore, payerStore)
+                val payerPaymentWeightRepository =
+                    PayerPaymentWeightRepository(payerPaymentWeightStorage(), payerStore)
                 SampleGenerator(
                     workspaceRepository,
                     chargesModelRepository,
@@ -324,7 +338,173 @@ private fun fetchWorkspacesAsync(
             ).show()
             return@launch;
         }
-        Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         onSuccess(workspacesResult.getOrNull()!!.results)
     }
+}
+
+
+suspend fun seedTemplateData() {
+    val workspaceRepository = WorkspaceRepository(workspaceStorage())
+    val payerRepositoryRepository = PayerRepository(payerStorage())
+    val expenseRepository = ExpenseRepository(expenseStorage())
+    val chargesModelRepository = ChargesModelRepository(chargesModelStorage())
+    val chargeAssociationRepository = ChargeAssociationRepository(
+        chargeAssociationStorage(), expenseStorage(), payerStorage()
+    )
+    val payerPaymentWeightRepository = PayerPaymentWeightRepository(
+        payerPaymentWeightStorage(), payerStorage()
+    )
+    val workspace =
+        workspaceRepository.add(Workspace("", Instant.DISTANT_PAST, "Template")).getOrNull()
+            ?: return
+    val motherPayer = payerRepositoryRepository.add(
+        workspace.id,
+        Payer("", Instant.DISTANT_PAST, workspace.id, "Mother")
+    ).getOrNull()
+        ?: return
+    val fatherPayer = payerRepositoryRepository.add(
+        workspace.id,
+        Payer("", Instant.DISTANT_PAST, workspace.id, "Father")
+    ).getOrNull()
+        ?: return
+    val daughterPayer = payerRepositoryRepository.add(
+        workspace.id,
+        Payer("", Instant.DISTANT_PAST, workspace.id, "Daughter")
+    ).getOrNull()
+        ?: return
+    val waterExpense = expenseRepository.add(
+        workspace.id,
+        Expense("", Instant.DISTANT_PAST, workspace.id, "Water")
+    ).getOrNull()
+        ?: return
+    val energyExpense = expenseRepository.add(
+        workspace.id,
+        Expense("", Instant.DISTANT_PAST, workspace.id, "Energy")
+    ).getOrNull()
+        ?: return
+    val netflixExpense = expenseRepository.add(
+        workspace.id,
+        Expense("", Instant.DISTANT_PAST, workspace.id, "Netflix")
+    ).getOrNull()
+        ?: return
+    val internetExpense = expenseRepository.add(
+        workspace.id,
+        Expense("", Instant.DISTANT_PAST, workspace.id, "Internet")
+    ).getOrNull()
+        ?: return
+    val chargeModel = chargesModelRepository.add(
+        workspace.id,
+        ChargesModel("", Instant.DISTANT_PAST, workspace.id, "Model Template")
+    ).getOrNull()
+        ?: return
+    val energyByMotherAssociation = chargeAssociationRepository.add(
+        chargeModel.id,
+        ChargeAssociation(
+            "",
+            Instant.DISTANT_PAST,
+            workspace.id,
+            "energy by mother",
+            energyExpense,
+            motherPayer
+        )
+    ).getOrNull()
+        ?: return
+    val waterByFatherAssociation = chargeAssociationRepository.add(
+        chargeModel.id,
+        ChargeAssociation(
+            "",
+            Instant.DISTANT_PAST,
+            workspace.id,
+            "water by father",
+            waterExpense,
+            fatherPayer
+        )
+    ).getOrNull()
+        ?: return
+    val netflixByDaughterAssociation = chargeAssociationRepository.add(
+        chargeModel.id,
+        ChargeAssociation(
+            "",
+            Instant.DISTANT_PAST,
+            workspace.id,
+            "netflix by daughter",
+            netflixExpense,
+            daughterPayer
+        )
+    ).getOrNull()
+        ?: return
+
+    val internetByDaughterAssociation = chargeAssociationRepository.add(
+        chargeModel.id,
+        ChargeAssociation(
+            "",
+            Instant.DISTANT_PAST,
+            workspace.id,
+            "internet by daughter",
+            internetExpense,
+            daughterPayer
+        )
+    ).getOrNull()
+        ?: return
+
+    // motherWeightForEnergyByMother
+    payerPaymentWeightRepository.add(
+        energyByMotherAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, motherPayer)
+    ).getOrNull()
+
+    // fatherWeightForEnergyByMother
+    payerPaymentWeightRepository.add(
+        energyByMotherAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, fatherPayer)
+    ).getOrNull()
+
+    // daughterWeightForEnergyByMother
+    payerPaymentWeightRepository.add(
+        energyByMotherAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, daughterPayer)
+    ).getOrNull()
+
+    // motherWeightForWaterByFather
+    payerPaymentWeightRepository.add(
+        waterByFatherAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 2f, motherPayer)
+    ).getOrNull()
+
+    // fatherWeightForWaterByFather
+    payerPaymentWeightRepository.add(
+        waterByFatherAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 2f, fatherPayer)
+    ).getOrNull()
+
+    // motherWeightForNetflixByDaughter
+    payerPaymentWeightRepository.add(
+        netflixByDaughterAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 2f, motherPayer)
+    ).getOrNull()
+
+    // daughterWeightForNetflixByDaughter
+    payerPaymentWeightRepository.add(
+        netflixByDaughterAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 2f, daughterPayer)
+    ).getOrNull()
+
+    // motherWeightForInternetByDaughter
+    payerPaymentWeightRepository.add(
+        internetByDaughterAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, motherPayer)
+    ).getOrNull()
+
+    // fatherWeightForInternetByDaughter
+    payerPaymentWeightRepository.add(
+        internetByDaughterAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, fatherPayer)
+    ).getOrNull()
+
+    // daughterWeightForInternetByDaughter
+    payerPaymentWeightRepository.add(
+        internetByDaughterAssociation.id,
+        PayerPaymentWeight("", Instant.DISTANT_PAST, workspace.id, 1f / 3f, daughterPayer)
+    ).getOrNull()
 }

@@ -23,7 +23,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Expense
 import com.blackmidori.expenses.repositories.ExpenseRepository
-import com.blackmidori.expenses.stores.expenseStore
+import com.blackmidori.expenses.stores.expenseStorage
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -53,7 +53,7 @@ fun AddExpenseScreen(
                     val TAG = "AddExpenseScreen.submit"
                     val expense = Expense("", Instant.DISTANT_PAST, workspaceId,name)
                     val expenseResult =
-                        ExpenseRepository(expenseStore(context)).add(workspaceId, expense)
+                        ExpenseRepository(expenseStorage()).add(workspaceId, expense)
                     if (expenseResult.isFailure) {
                         Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
 

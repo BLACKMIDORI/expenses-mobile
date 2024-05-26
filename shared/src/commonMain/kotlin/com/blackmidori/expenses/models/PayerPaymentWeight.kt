@@ -13,6 +13,29 @@ data class PayerPaymentWeight(
     override val id: String,
     override val creationDateTime: Instant,
     val chargeAssociationId: String,
-    val weight: Double,
+    val weight: Float,
     val payer: Payer
-): Entity
+): Entity {
+    override fun toMap(): Map<String, Any?> {
+        return mapOf(
+            Pair("id", id),
+            Pair("creationDateTime", creationDateTime),
+            Pair("chargeAssociationId", chargeAssociationId),
+            Pair("weight", weight),
+            Pair("payer", payer.toMap())
+        )
+    }
+
+    companion object{
+        fun fromMap(map: Map<String, Any?>):PayerPaymentWeight{
+            return PayerPaymentWeight(
+                map["id"] as String,
+                Instant.parse(map["creationDateTime"] as String),
+                map["chargeAssociationId"] as String,
+                map["weight"] as Float,
+                @Suppress("UNCHECKED_CAST")
+                Payer.fromMap(map["payer"] as Map<String, Any?>)
+            )
+        }
+    }
+}

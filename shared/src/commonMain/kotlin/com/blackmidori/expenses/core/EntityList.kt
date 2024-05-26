@@ -16,4 +16,6 @@ inline fun <T:Entity, R : Comparable<R>>  EntityList<T>.sortedByDescending(cross
 interface Entity{
     val id: String
     val creationDateTime: Instant
+
+    fun toMap(): Map<String, Any?>
 }

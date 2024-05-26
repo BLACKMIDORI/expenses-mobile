@@ -27,7 +27,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Expense
 import com.blackmidori.expenses.repositories.ExpenseRepository
-import com.blackmidori.expenses.stores.expenseStore
+import com.blackmidori.expenses.stores.expenseStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -47,7 +47,7 @@ fun UpdateExpenseScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchExpenseAsync(expenseId, coroutineScope, context) {
             workspaceId = it.workspaceId
             name = it.name
@@ -68,7 +68,7 @@ fun UpdateExpenseScreen(
                     val TAG = "UpdateExpenseScreen.update"
                     val expense = Expense(expenseId, Instant.DISTANT_PAST,workspaceId, name)
                     val expenseResult =
-                        ExpenseRepository(expenseStore(context)).update(expense)
+                        ExpenseRepository(expenseStorage()).update(expense)
                     if (expenseResult.isFailure) {
                         Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
 
@@ -99,7 +99,7 @@ fun UpdateExpenseScreen(
                     coroutineScope.launch {
                         val TAG = "UpdateExpenseScreen.delete"
                         val deleteResult =
-                            ExpenseRepository(expenseStore(context)).delete(expenseId)
+                            ExpenseRepository(expenseStorage()).delete(expenseId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -137,7 +137,7 @@ private fun fetchExpenseAsync(
     val TAG = "UpdateExpenseScreen.fetchExpenseAsync"
     coroutineScope.launch {
         val expenseResult =
-            ExpenseRepository(expenseStore(context)).getOne(expenseId)
+            ExpenseRepository(expenseStorage()).getOne(expenseId)
         if (expenseResult.isFailure) {
             Log.w(TAG, "Error: " + expenseResult.exceptionOrNull())
             coroutineScope.launch {

@@ -38,10 +38,10 @@ import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.models.PayerPaymentWeight
 import com.blackmidori.expenses.repositories.ChargeAssociationRepository
 import com.blackmidori.expenses.repositories.PayerPaymentWeightRepository
-import com.blackmidori.expenses.stores.chargeAssociationStore
-import com.blackmidori.expenses.stores.expenseStore
-import com.blackmidori.expenses.stores.payerPaymentWeightStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.chargeAssociationStorage
+import com.blackmidori.expenses.stores.expenseStorage
+import com.blackmidori.expenses.stores.payerPaymentWeightStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -70,7 +70,7 @@ fun ChargeAssociationScreen(
         mutableStateOf(arrayOf<PayerPaymentWeight>())
     }
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchChargeAssociationAsync(chargeAssociationId, coroutineScope, context) {
             chargeAssociation = it
         }
@@ -128,7 +128,7 @@ fun ChargeAssociationScreen(
                         modifier = Modifier.clickable {
                             onUpdateClick(item.id)
                         },
-                        headlineContent = { Text(item.weight.toString()) },
+                        headlineContent = { Text("${item.payer.name} (${item.weight})") },
                         supportingContent = { Text(item.creationDateTime.toString()) },
                         trailingContent = {
                             IconButton({
@@ -158,9 +158,9 @@ private fun fetchChargeAssociationAsync(
     coroutineScope.launch {
         val chargeAssociationResult =
             ChargeAssociationRepository(
-                chargeAssociationStore(context),
-                expenseStore(context),
-                payerStore(context),
+                chargeAssociationStorage(),
+                expenseStorage(),
+                payerStorage(),
             ).getOne(
                 chargeAssociationId
             )
@@ -193,8 +193,8 @@ private fun fetchPayerPaymentWeightsAsync(
     coroutineScope.launch {
         val payerPaymentWeightResult =
             PayerPaymentWeightRepository(
-                payerPaymentWeightStore(context),
-                payerStore(context)
+                payerPaymentWeightStorage(),
+                payerStorage()
             ).getPagedList(
                 chargeAssociationId
             )
@@ -210,7 +210,7 @@ private fun fetchPayerPaymentWeightsAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payerPaymentWeightResult.getOrNull()!!.results)
     }

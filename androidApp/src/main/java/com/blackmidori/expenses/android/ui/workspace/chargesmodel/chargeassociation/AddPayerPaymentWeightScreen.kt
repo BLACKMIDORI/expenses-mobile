@@ -34,8 +34,8 @@ import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.models.PayerPaymentWeight
 import com.blackmidori.expenses.repositories.PayerPaymentWeightRepository
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.payerPaymentWeightStore
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.payerPaymentWeightStorage
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -57,7 +57,7 @@ fun AddPayerPaymentWeightScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
 
         fetchPayersAsync(workspaceId, coroutineScope, context) {
             payers = it
@@ -75,7 +75,7 @@ fun AddPayerPaymentWeightScreen(
                 value = payerPaymentWeight?.weight?.toString() ?: "", onValueChange = {
                     var weight = payerPaymentWeight?.weight
                     try {
-                        weight = it.toDouble();
+                        weight = it.toFloat();
                     } catch (e: NumberFormatException) {
                         //Silence
                     }
@@ -83,7 +83,7 @@ fun AddPayerPaymentWeightScreen(
                         payerPaymentWeight?.id ?: "",
                         payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
                         chargeAssociationId,
-                        weight ?: .0,
+                        weight ?: .0f,
                         payerPaymentWeight?.payer ?: Payer(
                             "",
                             Instant.DISTANT_PAST,
@@ -123,7 +123,7 @@ fun AddPayerPaymentWeightScreen(
                                     payerPaymentWeight?.id ?: "",
                                     payerPaymentWeight?.creationDateTime ?: Instant.DISTANT_PAST,
                                     chargeAssociationId,
-                                    payerPaymentWeight?.weight ?: .0,
+                                    payerPaymentWeight?.weight ?: .0f,
                                     item,
                                 )
                                 expanded = false
@@ -138,8 +138,8 @@ fun AddPayerPaymentWeightScreen(
                     val localPayerPaymentWeight = payerPaymentWeight ?: return@launch
                     val chargeAssociationResult =
                         PayerPaymentWeightRepository(
-                            payerPaymentWeightStore(context),
-                            payerStore(context)
+                            payerPaymentWeightStorage(),
+                            payerStorage()
                         ).add(
                             chargeAssociationId,
                             localPayerPaymentWeight
@@ -182,8 +182,8 @@ private fun fetchPayerPaymentWeightAsync(
     coroutineScope.launch {
         val payerPaymentWeightResult =
             PayerPaymentWeightRepository(
-                payerPaymentWeightStore(context),
-                payerStore(context)
+                payerPaymentWeightStorage(),
+                payerStorage()
             ).getOne(
                 chargeAssociationId
             )
@@ -215,7 +215,7 @@ private fun fetchPayersAsync(
     val TAG = "AddPayerPaymentWeightScreen.fetchPayersAsync"
     coroutineScope.launch {
         val payerResult =
-            PayerRepository(payerStore(context)).getPagedList(workspaceId)
+            PayerRepository(payerStorage()).getPagedList(workspaceId)
         if (payerResult.isFailure) {
             Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
             coroutineScope.launch {
@@ -228,7 +228,7 @@ private fun fetchPayersAsync(
             return@launch;
         }
         coroutineScope.launch {
-            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(context, "List Updated", Toast.LENGTH_SHORT).show()
         }
         onSuccess(payerResult.getOrNull()!!.results)
     }

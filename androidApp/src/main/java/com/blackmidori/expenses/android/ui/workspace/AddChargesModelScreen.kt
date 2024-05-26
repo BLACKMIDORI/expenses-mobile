@@ -23,7 +23,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.ChargesModel
 import com.blackmidori.expenses.repositories.ChargesModelRepository
-import com.blackmidori.expenses.stores.chargesModelStore
+import com.blackmidori.expenses.stores.chargesModelStorage
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -53,7 +53,7 @@ fun AddChargesModelScreen(
                     val TAG = "AddChargesModel.submit"
                     val chargesModel = ChargesModel("", Instant.DISTANT_PAST, workspaceId, name)
                     val chargesModelResult =
-                        ChargesModelRepository(chargesModelStore(context)).add(workspaceId, chargesModel)
+                        ChargesModelRepository(chargesModelStorage()).add(workspaceId, chargesModel)
                     if (chargesModelResult.isFailure) {
                         Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
 

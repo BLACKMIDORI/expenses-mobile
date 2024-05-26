@@ -5,16 +5,16 @@ import com.blackmidori.expenses.models.Workspace
 import com.blackmidori.expenses.core.PagedList
 
 class WorkspaceRepository(
-    private val store: Store<out EntityList<Workspace>>
+    private val storage: Storage<out EntityList<Workspace>>
 ) {
     suspend fun add(entity: Workspace): Result<Workspace> {
-        return store.add { id, creationDateTime ->
+        return storage.add() { id, creationDateTime ->
             Workspace(id, creationDateTime, entity.name)
         }
     }
 
     suspend fun getPagedList(): Result<PagedList<Workspace>> {
-        val result = store.getList();
+        val result = storage.getList();
         return result.map {
             PagedList(
                 999,
@@ -25,12 +25,12 @@ class WorkspaceRepository(
     }
 
     suspend fun getOne(id: String): Result<Workspace> {
-        return store.getOne(id)
+        return storage.getOne(id)
     }
 
     suspend fun update(entity: Workspace): Result<Workspace> {
         val old = getOne(entity.id).getOrNull()
-        return store.update(
+        return storage.update(
             old?.let {
                 Workspace(it.id, it.creationDateTime, entity.name)
             } ?: entity
@@ -38,7 +38,7 @@ class WorkspaceRepository(
     }
 
     suspend fun delete(id: String): Result<Boolean> {
-        return store.delete(id)
+        return storage.delete(id)
     }
 
 }

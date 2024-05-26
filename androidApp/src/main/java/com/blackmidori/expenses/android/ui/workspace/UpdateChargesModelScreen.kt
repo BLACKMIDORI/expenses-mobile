@@ -27,7 +27,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.ChargesModel
 import com.blackmidori.expenses.repositories.ChargesModelRepository
-import com.blackmidori.expenses.stores.chargesModelStore
+import com.blackmidori.expenses.stores.chargesModelStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -44,7 +44,7 @@ fun UpdateChargesModelScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchChargesModelAsync(chargesModelId, coroutineScope, context) {
             name = it.name
         }
@@ -64,7 +64,7 @@ fun UpdateChargesModelScreen(
                     val TAG = "UpdateChargesModel.update"
                     val chargeModel = ChargesModel(chargesModelId, Instant.DISTANT_PAST, chargesModelId, name)
                     val chargeModelResult =
-                        ChargesModelRepository(chargesModelStore(context)).update(chargeModel)
+                        ChargesModelRepository(chargesModelStorage()).update(chargeModel)
                     if (chargeModelResult.isFailure) {
                         Log.w(TAG, "Error: " + chargeModelResult.exceptionOrNull())
 
@@ -95,7 +95,7 @@ fun UpdateChargesModelScreen(
                     coroutineScope.launch {
                         val TAG = "UpdateChargesModel.delete"
                         val deleteResult =
-                            ChargesModelRepository(chargesModelStore(context)).delete(chargesModelId)
+                            ChargesModelRepository(chargesModelStorage()).delete(chargesModelId)
                         if (deleteResult.isFailure) {
                             Log.w(TAG, "Error: " + deleteResult.exceptionOrNull())
 
@@ -133,7 +133,7 @@ private fun fetchChargesModelAsync(
     val TAG = "UpdateChargesModelScreen.fetchChargesModelAsync"
     coroutineScope.launch {
         val chargesModelResult =
-            ChargesModelRepository(chargesModelStore(context)).getOne(chargesModelId)
+            ChargesModelRepository(chargesModelStorage()).getOne(chargesModelId)
         if (chargesModelResult.isFailure) {
             Log.w(TAG, "Error: " + chargesModelResult.exceptionOrNull())
             coroutineScope.launch {

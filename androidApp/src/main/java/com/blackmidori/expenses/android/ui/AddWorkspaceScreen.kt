@@ -23,7 +23,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Workspace
 import com.blackmidori.expenses.repositories.WorkspaceRepository
-import com.blackmidori.expenses.stores.workspaceStore
+import com.blackmidori.expenses.stores.workspaceStorage
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -52,7 +52,7 @@ fun AddWorkspaceScreen(
                 coroutineScope.launch{
                     val workspace = Workspace("", Instant.DISTANT_PAST, name)
                     val workspaceResult =
-                        WorkspaceRepository(workspaceStore(context)).add(workspace)
+                        WorkspaceRepository(workspaceStorage()).add(workspace)
                     if (workspaceResult.isFailure) {
                         Log.w("AddWorkspaceScreen", "Error: " + workspaceResult.exceptionOrNull())
 

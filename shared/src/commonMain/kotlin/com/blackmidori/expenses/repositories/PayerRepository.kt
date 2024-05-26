@@ -5,16 +5,16 @@ import com.blackmidori.expenses.core.PagedList
 import com.blackmidori.expenses.models.Payer
 
 class PayerRepository(
-    private val store: Store<out EntityList<Payer>>
+    private val storage: Storage<out EntityList<Payer>>
 ) {
     suspend fun add(workspaceId: String, entity: Payer): Result<Payer> {
-        return store.add { id, creationDateTime ->
+        return storage.add (){ id, creationDateTime ->
             Payer(id, creationDateTime,workspaceId, entity.name)
         }
     }
 
     suspend fun getPagedList(workspaceId: String): Result<PagedList<Payer>> {
-        val result = store.getList();
+        val result = storage.getList();
         return result.map { it ->
             PagedList(
                 999,
@@ -25,12 +25,12 @@ class PayerRepository(
     }
 
     suspend fun getOne(id: String): Result<Payer> {
-        return store.getOne(id)
+        return storage.getOne(id)
     }
 
     suspend fun update(entity: Payer): Result<Payer> {
         val old = getOne(entity.id).getOrNull()
-        return store.update(
+        return storage.update(
             old?.let {
                 Payer(it.id, it.creationDateTime,it.workspaceId, entity.workspaceId,)
             } ?: entity
@@ -38,6 +38,6 @@ class PayerRepository(
     }
 
     suspend fun delete(id: String): Result<Boolean> {
-        return store.delete(id)
+        return storage.delete(id)
     }
 }

@@ -27,7 +27,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Workspace
 import com.blackmidori.expenses.repositories.WorkspaceRepository
-import com.blackmidori.expenses.stores.workspaceStore
+import com.blackmidori.expenses.stores.workspaceStorage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
@@ -45,7 +45,7 @@ fun UpdateWorkspaceScreen(
     }
 
     LaunchedEffect(key1 = null) {
-        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Loading...", Toast.LENGTH_SHORT).show()
         fetchWorkspaceAsync(workspaceId, coroutineScope, context) {
             name = it.name
         }
@@ -64,7 +64,7 @@ fun UpdateWorkspaceScreen(
                 coroutineScope.launch {
                     val workspace = Workspace(workspaceId, Instant.DISTANT_PAST, name)
                     val workspaceResult =
-                        WorkspaceRepository(workspaceStore(context)).update(workspace)
+                        WorkspaceRepository(workspaceStorage()).update(workspace)
                     if (workspaceResult.isFailure) {
                         Log.w(
                             "UpdateWorkspaceScreen",
@@ -94,7 +94,7 @@ fun UpdateWorkspaceScreen(
                 onClick = {
                     coroutineScope.launch  {
                     val deleteResult =
-                        WorkspaceRepository(workspaceStore(context)).delete(workspaceId)
+                        WorkspaceRepository(workspaceStorage()).delete(workspaceId)
                     if (deleteResult.isFailure) {
                         Log.w("DeleteWorkspaceScreen", "Error: " + deleteResult.exceptionOrNull())
 
@@ -129,7 +129,7 @@ private fun fetchWorkspaceAsync(
     val TAG = "fetchWorkspacesAsync"
     coroutineScope.launch{
         val workspaceResult =
-            WorkspaceRepository(workspaceStore(context)).getOne(workspaceId)
+            WorkspaceRepository(workspaceStorage()).getOne(workspaceId)
         if (workspaceResult.isFailure) {
             Log.w(TAG, "Error: " + workspaceResult.exceptionOrNull())
             Toast.makeText(

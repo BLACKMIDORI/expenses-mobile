@@ -7,24 +7,24 @@ import com.blackmidori.expenses.models.Expense
 import com.blackmidori.expenses.models.Payer
 
 class ChargeAssociationRepository(
-    private val store: Store<out EntityList<ChargeAssociation>>,
-    private val expenseStore: Store<out EntityList<Expense>>,
-    private val payerStore: Store<out EntityList<Payer>>,
+    private val storage: Storage<out EntityList<ChargeAssociation>>,
+    private val expenseStorage: Storage<out EntityList<Expense>>,
+    private val payerStorage: Storage<out EntityList<Payer>>,
 ) {
     suspend fun add(
         chargesModelId: String,
         entity: ChargeAssociation
     ): Result<ChargeAssociation> {
-        val expenseResult = expenseStore.getOne(entity.expense.id)
+        val expenseResult = expenseStorage.getOne(entity.expense.id)
         if (expenseResult.isFailure) {
             return expenseResult.map { throw Exception() };
         }
-        val payerResult = payerStore.getOne(entity.actualPayer.id)
+        val payerResult = payerStorage.getOne(entity.actualPayer.id)
         if (payerResult.isFailure) {
             return payerResult.map { throw Exception() };
         }
 
-        return store.add { id, creationDateTime ->
+        return storage.add() { id, creationDateTime ->
             ChargeAssociation(
                 id,
                 creationDateTime,
@@ -36,8 +36,9 @@ class ChargeAssociationRepository(
         }
     }
 
-    suspend fun getPagedList(chargesModelId: String): Result<PagedList<ChargeAssociation>> {
-        val result = store.getList();
+    suspend fun getPagedList(
+        chargesModelId: String): Result<PagedList<ChargeAssociation>> {
+        val result = storage.getList();
         return result.map { it ->
             PagedList(
                 999,
@@ -48,30 +49,32 @@ class ChargeAssociationRepository(
                         it.creationDateTime,
                         it.chargesModelId,
                         it.name,
-                        expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
-                        payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
+                        expenseStorage.getOne(it.expense.id).getOrNull() ?: it.expense,
+                        payerStorage.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
                     )
                 }.toTypedArray()
             )
         }
     }
 
-    suspend fun getOne(id: String): Result<ChargeAssociation> {
-        return store.getOne(id).map {
+    suspend fun getOne(
+        id: String): Result<ChargeAssociation> {
+        return storage.getOne(id).map {
             ChargeAssociation(
                 it.id,
                 it.creationDateTime,
                 it.chargesModelId,
                 it.name,
-                expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
-                payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
+                expenseStorage.getOne(it.expense.id).getOrNull() ?: it.expense,
+                payerStorage.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
             )
         }
     }
 
-    suspend fun update(entity: ChargeAssociation): Result<ChargeAssociation> {
+    suspend fun update(
+        entity: ChargeAssociation): Result<ChargeAssociation> {
         val old = getOne(entity.id).getOrNull()
-        return store.update(
+        return storage.update(
             old?.let {
                 ChargeAssociation(
                     it.id,
@@ -88,14 +91,15 @@ class ChargeAssociationRepository(
                 it.creationDateTime,
                 it.chargesModelId,
                 it.name,
-                expenseStore.getOne(it.expense.id).getOrNull() ?: it.expense,
-                payerStore.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
+                expenseStorage.getOne(it.expense.id).getOrNull() ?: it.expense,
+                payerStorage.getOne(it.actualPayer.id).getOrNull() ?: it.actualPayer,
             )
         }
     }
 
-    suspend fun delete(id: String): Result<Boolean> {
-        return store.delete(id)
+    suspend fun delete(
+        id: String): Result<Boolean> {
+        return storage.delete(id)
     }
 
 }

@@ -23,7 +23,7 @@ import com.blackmidori.expenses.android.shared.ui.SimpleAppBar
 import com.blackmidori.expenses.android.shared.ui.SimpleScaffold
 import com.blackmidori.expenses.models.Payer
 import com.blackmidori.expenses.repositories.PayerRepository
-import com.blackmidori.expenses.stores.payerStore
+import com.blackmidori.expenses.stores.payerStorage
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 
@@ -53,7 +53,7 @@ fun AddPayerScreen(
                     val TAG = "AddPayerScreen.submit"
                     val payer = Payer("", Instant.DISTANT_PAST, workspaceId,name)
                     val payerResult =
-                        PayerRepository(payerStore(context)).add(workspaceId, payer)
+                        PayerRepository(payerStorage()).add(workspaceId, payer)
                     if (payerResult.isFailure) {
                         Log.w(TAG, "Error: " + payerResult.exceptionOrNull())
 
